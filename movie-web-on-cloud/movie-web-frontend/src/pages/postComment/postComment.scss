@@ -1,0 +1,66 @@
+.body {
+    font-size: 14px;
+}
+
+.comment-box, 
+.post-comment .list {
+    background: #fff;
+    border-radius: 6px;
+    box-sizing: 0 2px 2px #0002 ;
+}
+
+.comment-session .name {
+    text-transform: uppercase;
+    font-weight: 500;
+}
+
+.comment-post {
+    padding: 0 0 15px 58px;
+}
+
+.comment-box {
+    padding: 10px;
+    overflow: hidden;
+}
+
+.comment-box .user {
+    display: flex;
+    width: min-content;
+}
+
+.comment-box .image img {
+    width: 40px;
+    height: 40px;
+    margin-right: 50px;
+    border-radius: 50%;
+}
+
+.comment-box textarea {
+    background: #eee;
+    width: -webkit-fill-available;
+    height: 100px;
+    margin: 10px 0;
+    padding:  10px;
+    resize: inherit;
+    border-radius: 10px;
+    box-shadow: 0 0 0 1px #0003;
+}
+
+.comment-box textarea:focus-visible {
+    box-shadow: inset 0 0 0 1px #009cff;
+    outline: none;
+}
+
+.comment-box .comment-submit {
+    float: right;
+    padding: 6px 10px;
+    border: none;
+    background: #009cff;
+    color: #eee;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.comment-box .comment-submit:hover {
+    background: #0076bf;
+}

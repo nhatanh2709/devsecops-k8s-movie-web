@@ -1,0 +1,124 @@
+variables:
+    USER_PROJECT: "onlineshop"
+    IMAGE_NAME: ${CI_REGISTRY}/${USER_PROJECT}/${CI_PROJECT_NAME}
+    IMAGE_TAG: ${CI_COMMIT_REF_NAME}_${CI_COMMIT_SHORT_SHA}
+    IMAGE_VERSION: "${CI_REGISTRY}/${USER_PROJECT}/${CI_PROJECT_NAME}:${CI_COMMIT_REF_NAME}_${CI_COMMIT_SHORT_SHA}"
+    HELM_REPO: "gitlab.nhatanh2709.com/manifest/movie-web-backend-api-gateway.git"
+    HELM_BRANCH: "main"
+    HELM_GIT: "http://gitlab.nhatanh2709.com/manifest/movie-web-backend-api-gateway.git"
+    LOCAL_REPO: ${USER_PROJECT}_${CI_PROJECT_NAME}_${CI_COMMIT_REF_NAME}_${CI_COMMIT_SHORT_SHA}
+    CODECLIMATE_FILE: "codeclimate_analysis_${CI_PROJECT_NAME}_${CI_COMMIT_REF_NAME}_${CI_COMMIT_SHORT_SHA}_report"
+    SYNKSCAN_FILE: "synk_scan_${CI_PROJECT_NAME}_${CI_COMMIT_REF_NAME}_${CI_COMMIT_SHORT_SHA}_report"
+    TRIVYFS_FILE: "tryvi_scan_${CI_PROJECT_NAME}_${CI_COMMIT_REF_NAME}_${CI_COMMIT_SHORT_SHA}_report"
+    TRIVY_IMAGE_FILE: "security_scan_image_${CI_PROJECT_NAME}_${CI_COMMIT_REF_NAME}_${CI_COMMIT_SHORT_SHA}_report"
+
+
+stages:
+    - build
+    - test source code
+    - security scan image
+    - push
+    - change k8s image
+build: 
+    stage: build
+    variables: 
+        GIT_STRATEGY: clone
+    before_script:
+        - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    script:
+        - docker build -t $IMAGE_VERSION .
+    tags: 
+        - online-shop-build-shell
+    only:
+        - tags
+
+trivyfs scan: 
+    stage: test source code
+    variables:
+        GIT_STRATEGY: clone
+    script:
+        - docker run --rm -v $PWD:/${CI_PROJECT_NAME} -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.52.0 fs /${CI_PROJECT_NAME} --severity HIGH,CRITICAL --format template --template "@contrib/html.tpl" --output /${CI_PROJECT_NAME}/$TRIVYFS_FILE.html
+    tags: 
+        - online-shop-build-shell
+    after_script:
+        - sudo chown -R gitlab-runner $(pwd)
+    only:
+        - tags
+    artifacts:
+        paths:
+        - $TRIVYFS_FILE.html
+        expire_in: 1 day
+
+
+synkscan:
+    stage: test source code 
+    variables:
+        GIT_STRATEGY: clone
+    script:
+        - docker build --rm --network host --build-arg SNYK_AUTH_TOKEN=$SNYK_TOKEN --build-arg OUTPUT_FILENAME=$SYNKSCAN_FILE -t $SYNKSCAN_FILE -f Dockerfile-snyk .
+        - docker create --name $SYNKSCAN_FILE $SYNKSCAN_FILE
+        - docker cp $SYNKSCAN_FILE:/app/$SYNKSCAN_FILE.html .
+    tags:
+        - online-shop-build-shell
+    after_script:
+        - sudo chown -R gitlab-runner $(pwd)
+    only:
+        - tags
+    artifacts:
+        paths:
+        - $SYNKSCAN_FILE.html
+        expire_in: 1 day
+
+trivy scan image:
+    stage: security scan image
+    variables:
+        GIT_STRATEGY: none
+    script:
+        - docker run --rm -v $(pwd):/${CI_PROJECT_NAME} -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.52.0 image --reset
+        - docker run --rm -v $(pwd):/${CI_PROJECT_NAME} -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.52.0 image --format template --template "@contrib/html.tpl" --output /${CI_PROJECT_NAME}/${TRIVY_IMAGE_FILE}.html $IMAGE_VERSION
+    tags:
+        - online-shop-build-shell
+    after_script:
+        - sudo chown -R gitlab-runner $(pwd)
+    only:
+        - tags
+    artifacts:
+        paths:
+        - ${TRIVY_IMAGE_FILE}.html
+        expire_in: 1 day
+
+push:
+    stage: push
+    variables:
+        GIT_STRATEGY: none
+    before_script:
+        - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    script:
+        - docker push $IMAGE_VERSION
+    after_script:
+        - docker logout $CI_REGISTRY
+    tags:
+        - online-shop-build-shell
+    only: 
+        - tags
+
+change k8s image: 
+    stage: change k8s image
+    variables: 
+        GIT_STRATEGY: clone
+    script:
+        - mkdir ${LOCAL_REPO}
+        - cd ${LOCAL_REPO}
+        - git clone ${HELM_GIT} --branch ${HELM_BRANCH} .
+        - sed -i "s|${IMAGE_NAME}:.*|${IMAGE_VERSION}|" ./api-gateway-deployment.yaml
+        - git add ./api-gateway-deployment.yaml
+        - git config --global user.email "alonhuan123@gmail.com"
+        - git config --global user.username "${GIT_USERNAME}"
+        - git commit -m "Change Image Api Gateway"
+        - git push http://${GIT_USERNAME}:${GIT_PASSWORD}@${HELM_REPO}
+    tags: 
+        - online-shop-build-shell
+    only:
+        - tags
+
+

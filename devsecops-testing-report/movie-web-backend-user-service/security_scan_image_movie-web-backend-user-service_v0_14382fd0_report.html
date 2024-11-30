@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <style>
+      * {
+        font-family: Arial, Helvetica, sans-serif;
+      }
+      h1 {
+        text-align: center;
+      }
+      .group-header th {
+        font-size: 200%;
+      }
+      .sub-header th {
+        font-size: 150%;
+      }
+      table, th, td {
+        border: 1px solid black;
+        border-collapse: collapse;
+        white-space: nowrap;
+        padding: .3em;
+      }
+      table {
+        margin: 0 auto;
+      }
+      .severity {
+        text-align: center;
+        font-weight: bold;
+        color: #fafafa;
+      }
+      .severity-LOW .severity { background-color: #5fbb31; }
+      .severity-MEDIUM .severity { background-color: #e9c600; }
+      .severity-HIGH .severity { background-color: #ff8800; }
+      .severity-CRITICAL .severity { background-color: #e40000; }
+      .severity-UNKNOWN .severity { background-color: #747474; }
+      .severity-LOW { background-color: #5fbb3160; }
+      .severity-MEDIUM { background-color: #e9c60060; }
+      .severity-HIGH { background-color: #ff880060; }
+      .severity-CRITICAL { background-color: #e4000060; }
+      .severity-UNKNOWN { background-color: #74747460; }
+      table tr td:first-of-type {
+        font-weight: bold;
+      }
+      .links a,
+      .links[data-more-links=on] a {
+        display: block;
+      }
+      .links[data-more-links=off] a:nth-of-type(1n+5) {
+        display: none;
+      }
+      a.toggle-more-links { cursor: pointer; }
+    </style>
+    <title>dev.nhatanhdevops.website/onlineshop/movie-web-backend-user-service:v0_14382fd0 (alpine 3.20.3) - Trivy Report - 2024-11-12 11:58:54.238515188 +0000 UTC m=+13.274117041 </title>
+    <script>
+      window.onload = function() {
+        document.querySelectorAll('td.links').forEach(function(linkCell) {
+          var links = [].concat.apply([], linkCell.querySelectorAll('a'));
+          [].sort.apply(links, function(a, b) {
+            return a.href > b.href ? 1 : -1;
+          });
+          links.forEach(function(link, idx) {
+            if (links.length > 3 && 3 === idx) {
+              var toggleLink = document.createElement('a');
+              toggleLink.innerText = "Toggle more links";
+              toggleLink.href = "#toggleMore";
+              toggleLink.setAttribute("class", "toggle-more-links");
+              linkCell.appendChild(toggleLink);
+            }
+            linkCell.appendChild(link);
+          });
+        });
+        document.querySelectorAll('a.toggle-more-links').forEach(function(toggleLink) {
+          toggleLink.onclick = function() {
+            var expanded = toggleLink.parentElement.getAttribute("data-more-links");
+            toggleLink.parentElement.setAttribute("data-more-links", "on" === expanded ? "off" : "on");
+            return false;
+          };
+        });
+      };
+    </script>
+  </head>
+  <body>
+    <h1>dev.nhatanhdevops.website/onlineshop/movie-web-backend-user-service:v0_14382fd0 (alpine 3.20.3) - Trivy Report - 2024-11-12 11:58:54.238536448 +0000 UTC m=+13.274138053</h1>
+    <table>
+      <tr class="group-header"><th colspan="6">alpine</th></tr>
+      <tr class="sub-header">
+        <th>Package</th>
+        <th>Vulnerability ID</th>
+        <th>Severity</th>
+        <th>Installed Version</th>
+        <th>Fixed Version</th>
+        <th>Links</th>
+      </tr>
+      <tr class="severity-LOW">
+        <td class="pkg-name">libcrypto3</td>
+        <td>CVE-2024-9143</td>
+        <td class="severity">LOW</td>
+        <td class="pkg-version">3.3.2-r0</td>
+        <td>3.3.2-r1</td>
+        <td class="links" data-more-links="off">
+          <a href="https://access.redhat.com/security/cve/CVE-2024-9143">https://access.redhat.com/security/cve/CVE-2024-9143</a>
+          <a href="https://github.com/openssl/openssl/commit/72ae83ad214d2eef262461365a1975707f862712">https://github.com/openssl/openssl/commit/72ae83ad214d2eef262461365a1975707f862712</a>
+          <a href="https://github.com/openssl/openssl/commit/bc7e04d7c8d509fb78fc0e285aa948fb0da04700">https://github.com/openssl/openssl/commit/bc7e04d7c8d509fb78fc0e285aa948fb0da04700</a>
+          <a href="https://github.com/openssl/openssl/commit/c0d3e4d32d2805f49bec30547f225bc4d092e1f4">https://github.com/openssl/openssl/commit/c0d3e4d32d2805f49bec30547f225bc4d092e1f4</a>
+          <a href="https://github.com/openssl/openssl/commit/fdf6723362ca51bd883295efe206cb5b1cfa5154">https://github.com/openssl/openssl/commit/fdf6723362ca51bd883295efe206cb5b1cfa5154</a>
+          <a href="https://github.openssl.org/openssl/extended-releases/commit/8efc0cbaa8ebba8e116f7b81a876a4123594d86a">https://github.openssl.org/openssl/extended-releases/commit/8efc0cbaa8ebba8e116f7b81a876a4123594d86a</a>
+          <a href="https://github.openssl.org/openssl/extended-releases/commit/9d576994cec2b7aa37a91740ea7e680810957e41">https://github.openssl.org/openssl/extended-releases/commit/9d576994cec2b7aa37a91740ea7e680810957e41</a>
+          <a href="https://nvd.nist.gov/vuln/detail/CVE-2024-9143">https://nvd.nist.gov/vuln/detail/CVE-2024-9143</a>
+          <a href="https://openssl-library.org/news/secadv/20241016.txt">https://openssl-library.org/news/secadv/20241016.txt</a>
+          <a href="https://www.cve.org/CVERecord?id=CVE-2024-9143">https://www.cve.org/CVERecord?id=CVE-2024-9143</a>
+        </td>
+      </tr>
+      <tr class="severity-LOW">
+        <td class="pkg-name">libssl3</td>
+        <td>CVE-2024-9143</td>
+        <td class="severity">LOW</td>
+        <td class="pkg-version">3.3.2-r0</td>
+        <td>3.3.2-r1</td>
+        <td class="links" data-more-links="off">
+          <a href="https://access.redhat.com/security/cve/CVE-2024-9143">https://access.redhat.com/security/cve/CVE-2024-9143</a>
+          <a href="https://github.com/openssl/openssl/commit/72ae83ad214d2eef262461365a1975707f862712">https://github.com/openssl/openssl/commit/72ae83ad214d2eef262461365a1975707f862712</a>
+          <a href="https://github.com/openssl/openssl/commit/bc7e04d7c8d509fb78fc0e285aa948fb0da04700">https://github.com/openssl/openssl/commit/bc7e04d7c8d509fb78fc0e285aa948fb0da04700</a>
+          <a href="https://github.com/openssl/openssl/commit/c0d3e4d32d2805f49bec30547f225bc4d092e1f4">https://github.com/openssl/openssl/commit/c0d3e4d32d2805f49bec30547f225bc4d092e1f4</a>
+          <a href="https://github.com/openssl/openssl/commit/fdf6723362ca51bd883295efe206cb5b1cfa5154">https://github.com/openssl/openssl/commit/fdf6723362ca51bd883295efe206cb5b1cfa5154</a>
+          <a href="https://github.openssl.org/openssl/extended-releases/commit/8efc0cbaa8ebba8e116f7b81a876a4123594d86a">https://github.openssl.org/openssl/extended-releases/commit/8efc0cbaa8ebba8e116f7b81a876a4123594d86a</a>
+          <a href="https://github.openssl.org/openssl/extended-releases/commit/9d576994cec2b7aa37a91740ea7e680810957e41">https://github.openssl.org/openssl/extended-releases/commit/9d576994cec2b7aa37a91740ea7e680810957e41</a>
+          <a href="https://nvd.nist.gov/vuln/detail/CVE-2024-9143">https://nvd.nist.gov/vuln/detail/CVE-2024-9143</a>
+          <a href="https://openssl-library.org/news/secadv/20241016.txt">https://openssl-library.org/news/secadv/20241016.txt</a>
+          <a href="https://www.cve.org/CVERecord?id=CVE-2024-9143">https://www.cve.org/CVERecord?id=CVE-2024-9143</a>
+        </td>
+      </tr>
+      <tr><th colspan="6">No Misconfigurations found</th></tr>
+      <tr class="group-header"><th colspan="6">node-pkg</th></tr>
+      <tr><th colspan="6">No Vulnerabilities found</th></tr>
+      <tr><th colspan="6">No Misconfigurations found</th></tr>
+    </table>
+  </body>
+</html>

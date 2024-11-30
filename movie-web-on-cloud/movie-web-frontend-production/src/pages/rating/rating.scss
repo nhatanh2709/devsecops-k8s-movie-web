@@ -1,0 +1,36 @@
+
+
+.ratings-wrapper{
+    border: thin solid #999;
+    display: inline-block;
+    margin-bottom: 2%;
+    padding: 2%;
+ }
+
+ .ratings{
+    display: flex;
+    flex-direction: row-reverse;
+ }
+
+ .ratings span{
+    cursor: pointer;
+    transition: color .2s;
+    font-size: 200%;
+ }
+
+ .ratings span:hover{
+    color: orange;
+ }
+ .ratings span:hover ~ span{
+    color: orange;
+ }
+ .ratings span[data-clicked]{
+    color: orange;
+ }
+ .ratings span[data-clicked] ~ span{
+    color: orange;
+ }	
+
+ .rated {
+    color: orange;
+}

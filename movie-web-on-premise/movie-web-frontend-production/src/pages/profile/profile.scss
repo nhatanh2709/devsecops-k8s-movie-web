@@ -1,0 +1,97 @@
+.desgin-form {
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin-bottom: 100px;
+}
+
+.form-container {
+    margin: 0 20px;
+}
+
+.form-desgin {
+    background-color: black;
+    border-radius: 8px;
+    box-shadow: 0 0 10px white;
+    padding: 20px;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 20px;
+    display: flex;
+}
+
+.column-left {
+    display: flex;
+    flex-direction: column;
+    padding-right: 20px;
+}
+
+.column-right {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    padding-left: 20px;
+}
+
+.desgin-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    font-size: 15px;
+}
+
+.desgin-input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 16px;
+    box-sizing: border-box;
+    border: 1px solid white;
+    border-radius: 4px;
+    font-size: 16px;
+}
+
+.desgin-button {
+    background-color: red;
+    color: #fff;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.desgin-img {
+    max-width: 100%;
+    height: auto;
+    margin: 50px;
+    border-radius: 4px;   
+}
+
+.desgin-button {
+    background-color: red;
+    color: #fff;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.button-container {
+    margin-top: 150px;
+    display: flex;
+    justify-content: flex-end;
+}
+.new-button {
+    
+    background-color: red;
+    color: #fff;
+    margin-right: 30px;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 20px;
+}

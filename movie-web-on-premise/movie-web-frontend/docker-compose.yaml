@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  movie-web-frontend:
+    image: movie-web-frontend
+    container_name: frontend
+    restart: always
+    ports:
+      - "3000:80"
+    environment:
+      - REACT_APP_GENERATE_SOURCEMAP=false
+      - REACT_APP_GATEWAY_HOST=localhost
+      - REACT_APP_GATEWAY_PORT=8800

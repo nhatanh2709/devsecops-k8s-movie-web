@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: movie-web-frontend-ingress
+  namespace: movie-web
+spec:
+  ingressClassName: nginx  
+  rules:
+    - host: web.nhatanhmovie.website
+      http:
+        paths:
+          - path: /  
+            pathType: Prefix  
+            backend:
+              service:
+                name: k8s-movie-web-frontend  
+                port:
+                  number: 80  

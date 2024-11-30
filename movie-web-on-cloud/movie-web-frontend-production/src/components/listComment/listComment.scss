@@ -1,0 +1,49 @@
+.comment {
+    box-sizing: border-box;
+    font-size: 14px;
+}
+
+.comment-box, 
+.post-comment .list {
+    background: #fff;
+    border-radius: 6px;
+    box-sizing: 0 2px 2px #0002 ;
+}
+
+.comment-session {
+    width: 60%;
+    height: auto;
+    margin: 0 auto;
+}
+
+.post-comment .list {
+    width: 100%;
+    margin-bottom: 12px;
+}
+
+.post-comment .list .user {
+    display: flex;
+    padding:  8px;
+    overflow: hidden;
+}
+
+.post-comment .list .user img {
+    width: 38px;
+    height: 38px;
+    margin-right: 10px;
+    border-radius: 50%;
+}
+
+.comment-session .name {
+    color: black;
+    text-transform: uppercase;
+    font-weight: 500;
+}
+.post-comment .list .day {
+    color: black;
+    font-size: 12px;
+}
+.post-comment .comment-post {
+    color: black;
+    padding: 0 0 15px 58px;
+}

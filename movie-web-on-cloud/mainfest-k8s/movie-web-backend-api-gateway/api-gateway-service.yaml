@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: k8s-api-gateway
+  namespace: movie-web
+spec:
+  type: ClusterIP
+  selector:
+    app: api-gateway
+  ports:
+    - port: 8800
+      targetPort: 8800
+      protocol: TCP
