@@ -1,7 +1,8 @@
 # Triển khai quy trình Pipeline DevSecOps
 ## 1.Tổng quan:
 ### Architecture
-[![](https://i.ibb.co/BP2mrBP/Screenshot-2024-12-03-173943.png)](https://ibb.co/b35x2X3)
+![](https://i.imgur.com/8PAyuGX.png)
+
 
 **Frontend**: ReactJS
 **Backend**: Nodejs
