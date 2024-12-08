@@ -37,6 +37,9 @@
 **Networking K8S:** Service Mesh(Istio)
 
 ## 2.Chi tiết dự án:
+### Architecture:
+![](https://i.imgur.com/UeKEIpx.png)
+
 ### Mô hình triển khai:
 - Triển khai theo mô hình micro service
 ### Các tính năng:
