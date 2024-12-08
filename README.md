@@ -16,8 +16,11 @@
 - Registry: Portus Registry
 
 **Orchestration**: Kubernetes
+
 **CI**: Gitlab CI
+
 **CD**: ArgoCD
+
 **Monitoring K8S Cluter:**
 - Prometheus
 - Grafana
@@ -28,7 +31,9 @@
 - K8S Cluster : Velero with S3
 
 **Cloud:** AWS
+
 **IAC:** Terraform
+
 **Networking K8S:** Service Mesh(Istio)
 
 ## 2.Chi tiết dự án:
