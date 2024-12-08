@@ -5,8 +5,11 @@
 
 
 **Frontend**: ReactJS
+
 **Backend**: Nodejs
+
 **Database**: Mongodb, Elastic Search
+
 **DevSecOps Tools:**
 - Frontend: Snyk, Trivyfs, Trivy Scan
 - Backend: Snyk, Trivyfs, Trivy Scan
