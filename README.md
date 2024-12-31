@@ -14,6 +14,8 @@
 - Frontend: Snyk, Trivyfs, Trivy Scan
 - Backend: Snyk, Trivyfs, Trivy Scan
 - Registry: Portus Registry
+- DAST: Arachni
+- Performence Testing: K6
 
 **Orchestration**: Kubernetes
 
