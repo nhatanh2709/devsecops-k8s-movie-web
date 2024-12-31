@@ -56,6 +56,7 @@
 - Thực hiện thanh toán với Zalo Pay để xem được nhiều phim hơn
 
 ### Các Service được triển khai:
+- Mỗi Services đều được triển khai dưới mô hình MVC
 - Api gateway: Proxy Pass các traffic đến server đến các service đích
 - User Service: Quản trị toàn bộ user của hệ thống
 - Movie Service: Quản lí toàn bộ movie hệ thống
