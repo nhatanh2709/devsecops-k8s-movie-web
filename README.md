@@ -88,7 +88,7 @@ service đó trên gitlab và Argocd sẽ tiến hành monitoring và tự độ
 - CNI: Calico
 
 -> Toàn bộ Versions 1 đã được Demo. Link ở Github
-#### Version 2 : Triển khai theo mô hình Service Mesh
+#### Version 2 : Triển khai theo mô hình Service Mesh với Strategy là A/B Testing
 ![](https://miro.medium.com/v2/resize:fit:2000/1*0KRmprOLmuS42GsKV8oy7A.png)
 ##### On premise:
 - Triển khai cụm 1 master và 2 worker với kubeadm
