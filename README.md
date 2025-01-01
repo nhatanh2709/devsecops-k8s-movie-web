@@ -31,12 +31,28 @@
 - Metadata: Firebase Storage
 - Database K8S: NFS Server
 - K8S Cluster : Velero with S3
+- K8S Service Cloud: EBS
+- K8S Service Local: NFS
 
-**Cloud:** AWS
+**Uptime**: Uptime Kuma
+
+**Hosting Provider**: Hostinger
 
 **IAC:** Terraform
 
-**Networking K8S:** Service Mesh(Istio)
+**Kubernetes Cluster** : 
+- K8s Local KubeSpray
+- K8s Seft Manager Node AWS (Normal and Service Mesh)
+- EKS Manager Node Group
+
+**Cloud** : 
+- Provider: AWS
+- Load-Balancer: AWS-LoadBalancer
+- Monitoring: CloudWatch
+- Web Application Firewall: AWS WAFs
+- Routing : Route53
+- Certificate: Certficate Manager
+- AutoScale System: Auto Scaling Group
 
 ## 2.Chi tiết dự án:
 ### Architecture:
@@ -75,32 +91,64 @@ service đó trên gitlab và Argocd sẽ tiến hành monitoring và tự độ
 - Performance Testing(K6): Công cụ kiểm thử Performance của application
 
 ### Kubernetes Cluster:
-#### Version 1: Triển khai theo mô hình ingress nginx
+#### Options 1: Kubernetes On-Premise Kubespray
 ![](https://docs.wallarm.com/pt-br/images/waf-installation/kubernetes/nginx-ingress-controller.png)
 
-##### Onpremise:
-- Triển khai cụm 3 master với ansible và kubespray
-- CNI: Calico
-##### Oncloud: 
-- AWS VPC
-- Triển khai cụm 1 master và 2 worker với 1 số tools kèm theo bằng kubeadm với iac là terraform
-- Conatiner runtime: Containerd
-- CNI: Calico
+#### Cluster:
+- Node: 3 Master
+- Tools: Ansible và Kubespray
+- Storage: NFS
 
--> Toàn bộ Versions 1 đã được Demo. Link ở Github
-#### Version 2 : Triển khai theo mô hình Service Mesh với Strategy là A/B Testing
-![](https://miro.medium.com/v2/resize:fit:2000/1*0KRmprOLmuS42GsKV8oy7A.png)
-##### On premise:
-- Triển khai cụm 1 master và 2 worker với kubeadm
-- Conatiner runtime: Containerd
+#### Options 2: Kubernetes Seft-Manager AWS Version 1
+#### Cluster:
+- Node: 1 Master và 2 Worker
+- IAC: Terraform
+- Cloud Networking: AWS VPC
+- Container Runtime: Containerd
 - CNI: Calico
-- Networking: Service Mesh (Istio)
+- K8S Networking: Kube-proxy
+- Storage Class: EBS, EFS, S3
+
+#### Options 3: Kubernetes Seft-Manager AWS Version 2
+#### Cluster:
+![Alt text](https://i.imgur.com/Aa2M6YI.jpg)
+- Node: 1 Master và 2 Worker
+- IAC: Terraform
+- Cloud Networking: AWS VPC
+- Container Runtime: Containerd
+- CNI: Calico
+- K8S Networking: Service Mesh (Istio)
+- Strategy: A/B Testing Application
+- Storage Class: EBS, EFS
+- Backup: S3
 
 -> Versions 2 được update để triển khai theo A/B Testing Strategy để giảm latency và tăng performence cho từng service
 
-### LoadBalancing:
-- Nginx được sữ dụng để proxy pass tới master trong cụm k8s
-và sử dụng CertBot của Let's Encyprtion handle https
+### Options 4: EKS Manager Node Group
+![Alt text](https://imgur.com/kEw7284.jpg)
+- Node: 
+-- Master: AWS EKS Manager
+-- Worker: EC2 Instance
+- IAC: Terraform
+- Cloud Networking: AWS VPC
+- Tools EKS Terraform: Helm Chart, AWS-EBS, AWS-LoadBalancer, AWS-Auto Scaling Group, AWS-Metrics-Server
+- ADDONS Kubernetes Terraform : Kube-proxy, VPC-CNI, CoreDNS
+- Identity Provider EKS: OIDC 
+- Storage Class: EBS, EFS
+- Backup: S3
+
+
+
+
+
+
+### Cloud :
+- AWS LoadBalancer: AWS Load Balancer là dịch vụ phân phối lưu lượng truy cập tự động đến nhiều máy chủ, Traffic đi vào sẽ được redirect và phân chia đều  tới cụm k8s
+- AWS WAFs: Là dịch vụ web application firewall của AWS được sử dụng để handle traffic tới AWS LoadBalancer theo các rule được enable
+- CloudWatch là dịch vụ monitoring của AWS được sử dụng như công cụ giám sát WAFs
+- Route53: Là công cụ giúp quản lý tên miền, định tuyến lưu lượng truy cập đến các tài nguyên, định tuyến traffic tới các resource như AWS LoadBalancer, CloudFront
+- Certificate Manager: Là dịch vụ cung cấp certificates cho các domain của AWS
+- Auto Scaling Group: Là dịch vụ tự động release 1 instance ec2 khi traffic trong cụm quá lớn, nếu lượng tài nguyên các node trong cụm ko thể enable được các service,pods,... sắp triển khai hoặc đang cần scale lên trong eks thì sẽ tự động scale thêm instance để tăng tải
 
 ### Monitoring:
 - Prometheus : Giám sát cụm k8s đặc biệt 2 thành quan trong là network và
@@ -111,11 +159,16 @@ cập nhật thành công thì sẽ lấy tất cả cấu hình bao gồm conat
 mới được triển khai ở manifest gitlab để tiến hành update cho cụm k8s
 
 
+### Velero: 
+- Là dịch vụ backup cụm kubernetes phù hợp cho môi trường on-premise và cả trên on-cloud với nhiều options cho storage như S3, EBS,...
+
 ### Backup:
 - Backup Metadata của application như movie, picture bằng Firebase Storage
 - Backup Stateful set khi triển khai cho K8S bằng NFS Server và NFS Client
 - Backup cho toàn bộ cụm k8s bằng velero và lưu trữ nó trên AWS S3
-
+- Backup High Availablity Database Cluster với môi trường Premise : NFS
+- Backup  Database với môi trường Cloud : EBS
+- Backup High Availablity Database Cluster với môi trường Cloud: EFS
 
 ### Link:
 - Github Link: https://github.com/nhatanh2709/devsecops-k8s-movie-web
