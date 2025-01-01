@@ -1,1 +1,0 @@
-velero install --provider aws --bucket $BUCKET_NAME --secret-file /tmp/aws-credentials --backup-location-config region=$REGION --snapshot-location-config region=$REGION --plugins velero/velero-plugin-for-aws:v1.5.0 --namespace velero
