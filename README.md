@@ -124,6 +124,9 @@ mới được triển khai ở manifest gitlab để tiến hành update cho c�
 - K8S Cluster Version 2 DevSecOps Pipeline: https://gitlab.com/movie-web-v2
 - K8s Cluster Version 2 Manifest: https://gitlab.com/movie-web-v2
 - Portus Registry: https://dev.nhatanhdevops.website
+- K8S-Local-KubeSpray: https://drive.google.com/file/d/1wKfk8NljcuQrWKQUd7t6sVMHatMa-P5M/view
+- K8S-Seft-Manager-AWS: https://drive.google.com/file/d/1p40rtNCu2HDGyF5mWNfF-Oo5gaZ09IG0/view
+- EKS-Manager-NodeGroup: https://drive.google.com/file/d/1TqxcqIi5QeHfNrQDAyWoxIfOSC4Ta8nw/view?usp=sharing
 
 
 
