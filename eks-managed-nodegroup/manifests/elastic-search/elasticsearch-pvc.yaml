@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: elasticsearch-claim
+  namespace: movie-web
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: ebs-storageclass
+  resources:
+    requests:
+      storage: 10Gi

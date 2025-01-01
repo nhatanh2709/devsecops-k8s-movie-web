@@ -1,0 +1,15 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: kibana
+  namespace: istio-action
+  labels:
+    app: kibana
+spec:
+  selector:
+    app: kibana
+  type: NodePort
+  ports:
+    - port: 5601
+      targetPort: 5601
+      nodePort: 31112

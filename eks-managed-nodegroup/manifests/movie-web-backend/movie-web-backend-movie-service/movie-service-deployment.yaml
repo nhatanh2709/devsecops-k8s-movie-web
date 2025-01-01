@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: movie-service
+  namespace: movie-web
+  labels:
+    app: movie-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: movie-service
+  template:
+    metadata:
+      labels:
+        app: movie-service
+    spec:
+      containers:
+        - name: movie-service
+          image: dev.nhatanhdevops.website/onlineshop/movie-web-backend-movie-service:v0_705a765e
+          ports:
+            - containerPort: 3002
+              protocol: TCP  
+          resources:
+            requests:
+              memory: "256Mi"
+          env:
+            - name: USER_SERVER_HOST
+              value: k8s-user-service
+            - name: USER_SERVER_PORT
+              value: "3001"
+            - name: ELASTIC_SEARCH_HOST
+              value: elasticsearch-service
+            - name: ELASTIC_SEARCH_PORT
+              value: "9200"
+          envFrom:
+            - secretRef:
+                name: movie-service-secret
+      imagePullSecrets:
+        - name: auth-registry
