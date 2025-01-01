@@ -1,0 +1,20 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: movie-web-frontend-virtual-service
+  namespace: movie-web
+spec:
+  hosts:
+  - "movie-web-frontend.nhatanhdevops.com"
+  gateways:
+  - movie-web-frontend-gateway
+  http:
+  - route:
+    - destination:
+        host: k8s-movie-web-frontend
+        subset: v1
+      weight: 90
+    - destination:
+        host: k8s-movie-web-frontend
+        subset: v2
+      weight: 10

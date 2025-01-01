@@ -1,0 +1,13 @@
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: bill-service-autoscale  # Sửa lỗi chính tả ở đây
+  namespace: movie-web
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: bill-service  
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 50

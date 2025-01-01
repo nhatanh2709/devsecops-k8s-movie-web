@@ -1,0 +1,27 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: movie-web-backend-ingress
+  namespace: movie-web
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/load-balancer-type: "nlb"
+    alb.ingress.kubernetes.io/backend-protocol: HTTP
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-southeast-2:586794476206:certificate/d506532f-16d3-4917-9b97-2128c5aa7617
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS":443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+spec:
+  #ingressClassName: nginx  
+  rules:
+    - host: devops.movie-web-backend.website
+      http:
+        paths:
+          - path: /  
+            pathType: Prefix  
+            backend:
+              service:
+                name: k8s-api-gateway
+                port:
+                  number: 8800

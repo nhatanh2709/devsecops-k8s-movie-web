@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  namespace: movie-web
+  labels:
+    app: api-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+    spec:
+      containers:
+        - name: api-gateway
+          image: dev.nhatanhdevops.website/onlineshop/movie-web-backend-api-gateway:v0_5fe96ff8
+          ports:
+            - containerPort: 8800
+              protocol: TCP  
+          resources:
+            requests:
+              memory: "256Mi"
+          env:
+            - name: SERVER_1_HOST
+              value: k8s-user-service
+            - name: SERVER_1_PORT
+              value: "3001"
+            - name: SERVER_2_HOST
+              value: k8s-movie-service
+            - name: SERVER_2_PORT
+              value: "3002"
+            - name: SERVER_3_HOST
+              value: k8s-bill-service
+            - name: SERVER_3_PORT
+              value: "3003"
+          envFrom:
+            - secretRef:
+                name: api-gateway-secret
+      imagePullSecrets:
+        - name: auth-registry
