@@ -1,1 +1,0 @@
-kubectl label namespace movie-web istio-injection=enabled
