@@ -95,13 +95,13 @@ service đó trên gitlab và Argocd sẽ tiến hành monitoring và tự độ
 ![](https://docs.wallarm.com/pt-br/images/waf-installation/kubernetes/nginx-ingress-controller.png)
 
 #### Cluster:
-- Node: 3 Master
+- Cluster: 3 Master
 - Tools: Ansible và Kubespray
 - Storage: NFS
 
 #### Options 2: Kubernetes Seft-Manager AWS Version 1
 #### Cluster:
-- Node: 1 Master và 2 Worker
+- Cluster: 1 Master và 2 Worker
 - IAC: Terraform
 - Cloud Networking: AWS VPC
 - Container Runtime: Containerd
@@ -112,7 +112,7 @@ service đó trên gitlab và Argocd sẽ tiến hành monitoring và tự độ
 #### Options 3: Kubernetes Seft-Manager AWS Version 2
 #### Cluster:
 ![Alt text](https://i.imgur.com/Aa2M6YI.jpg)
-- Node: 1 Master và 2 Worker
+- Cluster: 1 Master và 2 Worker
 - IAC: Terraform
 - Cloud Networking: AWS VPC
 - Container Runtime: Containerd
@@ -126,9 +126,9 @@ service đó trên gitlab và Argocd sẽ tiến hành monitoring và tự độ
 
 ### Options 4: EKS Manager Node Group
 ![Alt text](https://imgur.com/kEw7284.jpg)
-- Node: 
--- Master: AWS EKS Manager
--- Worker: EC2 Instance
+- Cluster: 
+- Master: AWS EKS Manager
+-  Worker: EC2 Instance
 - IAC: Terraform
 - Cloud Networking: AWS VPC
 - Tools EKS Terraform: Helm Chart, AWS-EBS, AWS-LoadBalancer, AWS-Auto Scaling Group, AWS-Metrics-Server
