@@ -1,0 +1,19 @@
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: elastic-ingress
+  namespace: logging
+spec:
+  ingressClassName: nginx  
+  rules:
+    - host: elastic.nhatanhmovie.website
+      http:
+        paths:
+          - path: /  
+            pathType: Prefix  
+            backend:
+              service:
+                name: elasticsearch-master
+                port:
+                  number: 9200

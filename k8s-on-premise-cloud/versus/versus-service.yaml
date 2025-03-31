@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: versus-service
+  namespace: versus
+spec:
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+    - IPv4
+  ipFamilyPolicy: SingleStack
+  type: ClusterIP
+  selector:
+    app: versus
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000
+      name: http
+  sessionAffinity: None

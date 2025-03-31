@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: versus-deployment
+  namespace: versus
+  labels: 
+    app: versus
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+  selector:
+    matchLabels:
+      app: versus
+  template:
+    metadata:
+      labels:
+        app: versus
+    spec:
+      containers:
+        - name: versus
+          image: ghcr.io/versuscontrol/versus-incident 
+          ports:
+            - containerPort: 3000
+              protocol: TCP
+              name: http
+          volumeMounts:
+            - name: versus-config-volume
+              mountPath: /app/config
+      volumes:
+        - name: versus-config-volume
+          configMap:
+            name: versus-configmap

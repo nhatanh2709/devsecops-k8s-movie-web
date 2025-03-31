@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: custom-error-pages
+  namespace: movie-web
+data:
+  403.html: |
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Access Denied</title>
+      <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background-color: #f8f9fa; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
+        h1 { color: #dc3545; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h1>Access Denied</h1>
+        <p id="error-message"></p>
+      </div>
+      <script>
+        const params = new URLSearchParams(window.location.hash.substring(1));
+        document.getElementById('error-message').textContent = params.get('msg') || 'You don\'t have permission to access this resource.';
+      </script>
+    </body>
+    </html>

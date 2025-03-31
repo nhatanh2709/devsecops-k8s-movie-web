@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: modsecurity-config
+  namespace: ingress-nginx
+data:
+  modsecurity.conf: |
+    SecRuleEngine On                
+    SecRequestBodyAccess On         
+    SecResponseBodyAccess On        
+    SecAuditLog /var/log/modsec_audit.log  
+    SecDebugLog /var/log/modsec_debug.log  
+    SecDefaultAction "phase:2,deny,log,status:403"
+    SecAuditLogFormat JSON
+    SecAuditEngine RelevantOnly
+    SecRequestBodyLimitAction Reject

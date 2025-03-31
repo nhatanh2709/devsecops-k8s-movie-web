@@ -1,0 +1,15 @@
+FROM ghcr.io/zaproxy/zaproxy:latest
+
+USER zap
+
+WORKDIR /zap
+RUN mkdir -p /zap/wrk
+
+ARG SCAN_URL
+ARG SCAN_REPORT=scan_report
+RUN echo "SCAN_URL=${SCAN_URL}, SCAN_REPORT=${SCAN_REPORT}"
+RUN ls
+RUN which zap-baseline.py
+RUN zap-baseline.py -t ${SCAN_URL} -r ${SCAN_REPORT}.html -d || true
+
+USER 1000

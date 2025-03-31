@@ -1,0 +1,61 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: dev
+  namespace: argocd
+spec:
+  description: "Project for managing applications in ArgoCD"
+  sourceRepos:
+    - '*'
+  destinations:
+    - server: 'https://kubernetes.default.svc'
+      namespace: '*'
+  roles:
+    - name: read-resource-movie-web-backend
+      description: Read-resource in movie web backend
+      policies:
+        - p, proj:dev:read-resource-movie-web-backend, applications, get, dev/movie-web-backend-bill-service, allow  
+        - p, proj:dev:read-resource-movie-web-backend, applications, get, dev/movie-web-backend-user-service, allow
+        - p, proj:dev:read-resource-movie-web-backend, applications, get, dev/movie-web-backend-movie-service, allow
+      groups:
+        - proj:dev:read-resource-movie-web-backend
+    - name: read-resource-movie-web-project
+      description: Read-resource in movie web project
+      policies:
+        - p, proj:dev:read-resource-movie-web-project, applications, get, dev/movie-web-backend-bill-service, allow  
+        - p, proj:dev:read-resource-movie-web-project, applications, get, dev/movie-web-backend-user-service, allow
+        - p, proj:dev:read-resource-movie-web-project, applications, get, dev/movie-web-backend-movie-service, allow   
+        - p, proj:dev:read-resource-movie-web-project, applications, get, dev/movie-web-frontend, allow
+        - p, proj:dev:read-resource-movie-web-project, applications, get, dev/movie-web-backend-api-gateway, allow 
+      groups:
+        - proj:dev:read-resource-movie-web-project
+    - name: Create-resource-movie-web-project
+      description: Create-resource in movie web project
+      policies:
+        - p, proj:dev:create-resource-movie-web-project, applications, create, dev/movie-web-backend-bill-service, allow  
+        - p, proj:dev:create-resource-movie-web-project, applications, create, dev/movie-web-backend-user-service, allow
+        - p, proj:dev:create-resource-movie-web-project, applications, create, dev/movie-web-backend-movie-service, allow   
+        - p, proj:dev:create-resource-movie-web-project, applications, create, dev/movie-web-frontend, allow
+        - p, proj:dev:create-resource-movie-web-project, applications, create, dev/movie-web-backend-api-gateway, allow 
+      groups:
+        - proj:dev:create-resource-movie-web-project
+    - name: Update-resource-movie-web-project
+      description: Update-resource in movie web project
+      policies:
+        - p, proj:dev:update-resource-movie-web-project, applications, update, dev/movie-web-backend-bill-service, allow  
+        - p, proj:dev:update-resource-movie-web-project, applications, update, dev/movie-web-backend-user-service, allow
+        - p, proj:dev:update-resource-movie-web-project, applications, update, dev/movie-web-backend-movie-service, allow   
+        - p, proj:dev:update-resource-movie-web-project, applications, update, dev/movie-web-frontend, allow
+        - p, proj:dev:update-resource-movie-web-project, applications, update, dev/movie-web-backend-api-gateway, allow 
+      groups:
+        - proj:dev:update-resource-movie-web-project
+    - name: Delete-resource-movie-web-project
+      description: Delete-resource in movie web project
+      policies:
+        - p, proj:dev:delete-resource-movie-web-project, applications, delete, dev/movie-web-backend-bill-service, allow
+        - p, proj:dev:delete-resource-movie-web-project, applications, delete, dev/movie-web-backend-user-service, allow
+        - p, proj:dev:delete-resource-movie-web-project, applications, delete, dev/movie-web-backend-movie-service, allow
+        - p, proj:dev:delete-resource-movie-web-project, applications, delete, dev/movie-web-frontend, allow
+        - p, proj:dev:delete-resource-movie-web-project, applications, delete, dev/movie-web-backend-api-gateway, allow
+      groups:
+        - proj:dev:delete-resource-movie-web-project

@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: modsecurity-configmap
+  namespace: ingress-nginx
+data:
+  modsecurity.conf: |
+    SecDefaultAction "phase:1,log,auditlog,deny,status:403"
+
+    # Block all requests from non-Vietnam IPs in header X-Country-Code
+    SecRule REQUEST_HEADERS:X-Country-Code "!@streq VN" "id:100001,phase:1,deny,status:403,msg:'Access denied from non-Vietnam IPs'"
+
+    # Rate limiting - Block IP making too many requests in a short time
+    SecRule IP:REQUEST_COUNT "@gt 100" \ 
+      "id:100002,phase:1,deny,status:429,msg:'Rate limit exceeded',skip:1"
+    SecAction "id:100003,phase:1,pass,setvar:IP.REQUEST_COUNT=+1,expirevar:IP.REQUEST_COUNT=60"
+
+    # Block common SQL injection attacks
+    SecRule ARGS "@rx (?i:(\%27)|(\')|(\-\-)|(\%23)|(#))" \ 
+      "id:100004,phase:2,deny,status:403,msg:'SQL Injection Attack Detected'"
+
+    # Block XSS attacks in comments
+    SecRule ARGS "@rx (?i:<[^\w<>]*script[^>]*>)" \ 
+      "id:100005,phase:2,deny,status:403,msg:'XSS Attack Detected'"
+
+    # Block path traversal attacks 
+    SecRule ARGS "@rx \.\./" \ 
+      "id:100006,phase:2,deny,status:403,msg:'Directory Traversal Attack Detected'"
+
+    # Block access to sensitive files
+    SecRule REQUEST_URI "@rx (?i:/\.git/|/\.env|/wp-config\.php|/\.htaccess)" \ 
+      "id:100008,phase:1,deny,status:403,msg:'Restricted File Access Attempt'"

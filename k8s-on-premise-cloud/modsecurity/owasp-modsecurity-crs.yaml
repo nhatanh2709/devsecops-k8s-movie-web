@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: crs-setup-config
+  namespace: ingress-nginx
+data:
+  crs-setup.conf: |
+    SecRule REQUEST_HEADERS:Content-Type "(?:text|application(?:/soap\+|/)|application/xml)/" \
+        "id:200000,phase:1,t:none,t:lowercase,pass,nolog,ctl:requestBodyProcessor=XML,setvar:tx.blocked_rule_id=200000,setenv:blocked_rule_id=200000"
+    
+    SecRule REQUEST_HEADERS:Content-Type "application/json" \
+        "id:200001,phase:1,t:none,t:lowercase,pass,nolog,ctl:requestBodyProcessor=JSON,setvar:tx.blocked_rule_id=200001,setenv:blocked_rule_id=200001"
+
+    SecRule REQUEST_HEADERS:X-Country-Code "!@streq VN" "id:100001,phase:1,deny,status:403,setvar:tx.blocked_rule_id=100001,setenv:blocked_rule_id=100001"

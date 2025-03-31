@@ -1,0 +1,44 @@
+driver:
+  enabled: true
+  kind: ebpf 
+  ebpf:
+    hostNetwork: true
+    leastPrivileged: false  
+
+
+controller:
+  kind: daemonset
+collectors:
+  kubernetes:
+    enabled: true
+  containerd:
+    enabled: true
+    socket: /var/run/containerd/containerd.sock
+
+falcosidekick:
+  enabled: true
+  webui:
+    enabled: true
+    redis:
+      persistence:
+        enabled: true
+        storageClass: "nfs-storage"
+        size: 2Gi
+  config:
+    slack:
+      webhookurl: "https://hooks.slack.com/services/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"
+      channel: "devops"
+      footer: "https://github.com/falcosecurity/falcosidekick"
+      username: "nhatanh2709"
+      outputformat: "all"
+      minimumpriority: "error"
+      messageformat: 'Alert : rule *{{ .Rule }}* triggered '
+
+falco:
+  jsonOutput: true
+  httpOutput:
+    enabled: true
+    url: http://falco-falcosidekick:2801
+
+auditLog:
+  enabled: true

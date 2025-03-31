@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: drop-execute-container
+  namespace: test
+  labels:
+    app: drop-execute-container
+spec:
+  containers:
+  - name: drop-execute-container
+    image: ubuntu:20.04
+    command: ["/bin/bash"]
+    args:
+        - "-c"
+        - |
+          apt-get update && \
+          apt-get install -y curl gnupg ca-certificates && \
+          mkdir -p /etc/apt/keyrings && \
+          curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
+          echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list && \
+          apt-get update && \
+          apt-get install -y nodejs npm git build-essential && \
+          npm install -g yarn pm2 && \
+          node -v && \
+          npm -v && \
+          echo "NodeJS environment is ready" && \
+          tail -f /dev/null
+    securityContext:
+      privileged: true
+    resources:
+      limits:
+        memory: "256Mi"
+        cpu: "200m"

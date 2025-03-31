@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: versus-configmap
+  namespace: versus
+data:
+  config.yaml: |
+    name: versus
+    host: 0.0.0.0
+    port: 3000
+
+    alert: 
+      debug_body: true
+      slack: 
+        enable: true
+        token: xoxb-8557515431654-8572612301155-j57RSwXUZi82M8Hkr2DEutTc
+        channel_id: C08GX6DK4L9
+        template_path: "/app/config/slack_message.tmpl"
+      
+      telegram: 
+        enable: false
+    
+    queue:
+      enable: true
+      sns:
+       enable: true
+       https_endpoint_subscription_path: /sns  
+  slack_message.tmpl:  |
+    *🚨 CloudWatch Alarm: {{.AlarmName}}*
+    ----------  
+    Description: {{.AlarmDescription}}
+    Current State: {{.NewStateValue}}
+    Timestamp: {{.StateChangeTime}}
+    ----------  
+    Owner <@${USERID}>: Investigate immediately

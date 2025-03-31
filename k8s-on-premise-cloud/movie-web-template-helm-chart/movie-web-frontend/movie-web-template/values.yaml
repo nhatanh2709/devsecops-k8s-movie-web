@@ -1,0 +1,57 @@
+global:
+  appName: "movie-web-frontend"
+  namepsace: "movie-web"
+  enableComponents:
+    ingress: true
+    service: true
+    configmap: true
+    autoscaling: true
+    serviceAccount: false
+
+replicaCount: 1
+revisionHistoryLimit: 10
+strategy:
+  type: "RollingUpdate"
+  rollingUpdate:
+    maxSurge: 25%
+    maxUnavailable: 25%
+image:
+  repository: "dev.nhatanhdevops.website/onlineshop/movie-web-frontend-production"
+  tag: "v16_cd333805"
+  pullPolicy: "Always"
+  imagePullSecrets: "auth-registry"
+
+service:
+  protocolName: "http"
+  port: 80
+  targetPort: 80
+  protocol: "TCP"
+  type: ClusterIP
+
+autoscaling:
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+resources:
+  requests:
+    memory: "256Mi"
+  limits: {}
+
+serviceAccount:
+  name: ""
+
+ingress:
+  ingressClassName: "nginx"
+  host: "movie-web-frontend.nhatanhmovie.website"
+  path: "/"
+  pathType: "Prefix"
+
+configmap:
+  data:
+    .env: |
+      REACT_APP_GENERATE_SOURCEMAP="false"
+      REACT_APP_API_GATEWAY_HOST="k8s-api-gateway"
+      REACT_APP_API_GATEWAY_PORT="8800"
+      REACT_APP_GATEWAY_BACKEND_URL = "https://movie-web-backend.nhatanhmovie.website"

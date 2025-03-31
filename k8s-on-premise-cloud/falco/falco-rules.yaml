@@ -1,0 +1,217 @@
+customRules:
+  rules-sys.yaml: |-
+    - rule: Unauthorized process
+      desc: There is an unauthorized mount process running
+      condition: unauthorization_process
+      output: "Unauthorized process (%proc.cmdline) running by user (user=%user.name user_uid=%user.uid user_loginuid=%user.loginuid)"
+      priority: WARNING
+      tags: [process, mount]
+
+    - rule: Unexpected outbound connection destination
+      desc: Detect any outbound connection to a destination outside of an allowed set of ips, networks, or domain names.  This rule absolutely requires profiling your environment beforehand. Network-based rules are extremely crucial  in any security program, as they can often provide the only definitive evidence. However, effectively operationalizing  them can be challenging due to the potential for noise.
+      condition: "outbound  and not ((fd.sip in (allowed_outbound_destination_ipaddrs)) or (fd.snet in (allowed_outbound_destination_networks)) or (fd.sip.name in (allowed_outbound_destination_domains)))"
+      output: Disallowed outbound connection destination (connection=%fd.name lport=%fd.lport rport=%fd.rport fd_type=%fd.type fd_proto=fd.l4proto evt_type=%evt.type user=%user.name user_uid=%user.uid user_loginuid=%user.loginuid process=%proc.name proc_exepath=%proc.exepath parent=%proc.pname command=%proc.cmdline terminal=%proc.tty %container.info)
+      priority: NOTICE
+      tags: [maturity_stable, host, container, network, mitre_commend_and_control]
+
+    - rule: Read SSH information
+      desc: This rule identifies attempts to read files within ssh directories using programs that are not related to ssh. It's a simple and  versatile detection method that works well alongside more specific rules focused on sensitive file access
+      condition: (open_read or open_directory) and (user_ssh_directory or fd.name startswith /root/.ssh) and not proc.name in (ssh_binaries)
+      output: "ssh-related file/directory read by non-ssh program (file=%fd.name pcmdline=%proc.pcmdline evt_type=%evt.type user=%user.name user_uid=%user.uid user_loginuid=%user.loginuid process=%proc.name proc_exepath=%proc.exepath parent=%proc.pname command=%proc.cmdline terminal=%proc.tty %container.info)"
+      priority: ERROR
+      tags: [maturity_incubating, host, container, filesystem]
+
+    - rule: Search Private Keys or Passwords
+      desc: Detect attempts to search for private keys or passwords using the grep or find command
+      condition: spawned_process  and ((grep_commands and private_key_or_password) or (proc.name = "find" and (proc.args contains "id_rsa" or proc.args contains "id_dsa" or proc.args contains "id_ed25519" or proc.args contains "id_ecdsa")))
+      output: Grep private keys or passwords activities found (user=%user.name evt_type=%evt.type user=%user.name user_uid=%user.uid user_loginuid=%user.loginuid process=%proc.name proc_exepath=%proc.exepath )
+      priority: CRITICAL
+      enabled: true
+      append: false
+      tags: [maturity_stable, host, process]
+
+    - rule: Disallowed SSH Connection Non Standard Port
+      desc: Detect any new outbound SSH connection from the host or container using a non-standard port. This rule holds the potential  to detect a family of reverse shells that cause the victim machine to connect back out over SSH, with STDIN piped from  the SSH connection to a shell's STDIN, and STDOUT of the shell piped back over SSH. Such an attack can be launched against  any app that is vulnerable to command injection. The upstream rule only covers a limited selection of non-standard ports.  We suggest adding more ports, potentially incorporating ranges based on your environment's knowledge and custom SSH port  configurations. This rule can complement the "Redirect STDOUT/STDIN to Network Connection in Container" or  "Disallowed SSH Connection" rule.
+      condition: outbound  and proc.exe endswith ssh  and fd.l4proto=tcp  and ssh_non_standard_ports_network
+      output: "Disallowed SSH Connection (connection=%fd.name lport=%fd.lport rport=%fd.rport fd_type=%fd.type fd_proto=%fd.l4proto evt_type=%evt.type user=%user.name user_uid=%user.uid user_loginuid=%user.loginuid process=%proc.name proc_exepath=%proc.exepath parent=%proc.pname command=%proc.cmdline terminal=%proc.tty %container.info)"
+      priority: NOTICE
+      tags: [maturity_stable, host, container, network, process]
+
+    - rule: Disallowed SSH Connection
+      desc: Detect any new SSH connection on port 22 to a host other than those in an allowed list of hosts.  This rule absolutely requires profiling your environment beforehand. Network-based rules are extremely  crucial in any security program, as they can often provide the only definitive evidence. However,  effectively operationalizing them can be challenging due to the potential for noise.
+      condition: inbound_outbound  and ssh_port and not  allowed_ssh_hosts
+      output: "Disallowed SSH Connection (connection=%fd.name lport=%fd.lport rport=%fd.rport fd_type=%fd.type fd_proto=fd.l4proto evt_type=%evt.type user=%user.name user_uid=%user.uid user_loginuid=%user.loginuid process=%proc.name proc_exepath=%proc.exepath parent=%proc.pname command=%proc.cmdline terminal=%proc.tty %container.info)"
+      priority: "NOTICE"
+      tags: [maturity_deprecated, host container, network, mitre_lateral_movement]
+    
+    - rule: Find AWS Credentials
+      desc: Detect attempts to search for private keys or passwords using the grep or find command, particularly targeting standard  AWS credential locations. This is often seen with unsophisticated attackers, as there are many ways to access files  using bash built-ins that could go unnoticed. Regardless, this serves as a solid baseline detection that can be tailored  to cover these gaps while maintaining an acceptable noise level. This rule complements the rule "Search Private Keys or Passwords".
+      condition: spawned_process  and ((grep_commands and private_aws_credentials) or (proc.name = "find" and proc.args endswith ".aws/credentials"))
+      output: Detected AWS credentials search activity (proc_pcmdline=%proc.pcmdline proc_cwd=%proc.cwd group_gid=%group.gid group_name=%group.name user_loginname=%user.loginname evt_type=%evt.type user=%user.name user_uid=%user.uid user_loginuid=%user.loginuid process=%proc.name proc_exepath=%proc.exepath parent=%proc.pname command=%proc.cmdline terminal=%proc.tty exe_flags=%evt.arg.flags %container.info)
+      priority: CRITICAL
+      tags: [maturity_stable, host, process, aws]
+
+    - macro: notification_process
+      condition: evt.type=execve and proc.name in (notify_process)
+
+    - macro: unauthorization_process
+      condition: evt.type=execve and proc.name in (forbidden_process)
+
+    - macro: open_write
+      condition: (evt.type in (open,openat,openat2) and evt.is_open_write=true and fd.typechar='f' and fd.num>=0)
+
+    - macro: open_read
+      condition: (evt.type in (open,openat,openat2) and evt.is_open_read=true and fd.typechar='f' and fd.num>=0)
+
+    - macro: open_directory
+      condition: (evt.type in (open,openat,openat2) and evt.is_open_read=true and fd.typechar='d' and fd.num>=0)
+
+    - macro: ssh_non_standard_ports_network
+      condition: fd.sport!=22
+
+    - macro: ssh_port
+      condition: fd.sport=22
+
+    - macro: allowed_ssh_hosts
+      condition: (never_true)
+
+    - macro: inbound_outbound
+      condition: ((((evt.type in (accept,accept4,listen,connect) and evt.dir=<)) and (fd.typechar = 4 or fd.typechar = 6)) and (fd.ip != "0.0.0.0" and fd.net != "127.0.0.0/8") and (evt.rawres >= 0 or evt.res = EINPROGRESS))
+
+    - macro: private_aws_credentials
+      condition: (proc.args icontains "aws_access_key_id" or proc.args icontains "aws_secret_access_key" or proc.args icontains "aws_session_token" or proc.args icontains "accesskeyid" or proc.args icontains "secretaccesskey")
+    
+    - list: forbidden_process
+      items: [mount, sudo, su, rm]
+
+    - list: notify_process
+      items: [cat, echo, ls, vi]
+
+    - list: ssh_binaries
+      items: [ssh, sshd, scp, sftp, ssh-agent, ssh-keygen, ssh-keyscan, ssh-add, sshpass]
+
+    - list: allowed_outbound_destination_ipaddrs
+      items: ['"127.0.0.1"', '"8.8.8.8"']
+
+    - list: allowed_outbound_destination_networks
+      items: ['"192.168.1.0/24"']
+
+    - list: allowed_outbound_destination_domains
+      items: ['"google.com"', '"facebook.com"']
+    
+    - macro: grep_commands
+      condition: (proc.name in (grep_binaries))
+
+    - list: grep_binaries
+      items: [grep, egrep, fgrep]
+
+  rules-containers.yaml: |-
+    - rule: Terminal Shell in container
+      desc: A shell was used as the entrypoint/exec point into a container with an attached terminal. Parent process may have  legitimately already exited and be null (read container_entrypoint macro). Common when using "kubectl exec" in Kubernetes.  Correlate with k8saudit exec logs if possible to find user or serviceaccount token used (fuzzy correlation by namespace and pod name).  Rather than considering it a standalone rule, it may be best used as generic auditing rule while examining other triggered  rules in this container/tty.
+      condition: spawned_process  and container and shell_procs  and proc.tty != 0 and container_entrypoint and not user_expected_terminal_shell_in_container_conditions
+      output: A shell was spawned in a container with an attached terminal (evt_type=%evt.type user=%user.name user_uid=%user.uid user_loginuid=%user.loginuid process=%proc.name proc_exepath=%proc.exepath parent=%proc.pname command=%proc.cmdline terminal=%proc.tty exe_flags=%evt.arg.flags %container.info)
+      priority: NOTICE
+      tags: [maturity_stable, container, process, mitre_execution]
+
+
+    - rule: Privileged Container Launched
+      desc: Detect when a privileged container is launched
+      condition: evt.type=container and container.privileged=true and not falco_privileged_containers and not user_privileged_containers
+      output: "Privileged container launched (container=%container.name image=%container.image.repository:%container.image.tag)"
+      priority: INFO
+      tags: [privileged, container, security]
+
+    - rule: Contact K8S API Server From Container
+      desc: Detect attempts to communicate with the K8S API Server from a container by non-profiled users
+      condition: evt.type=connect and evt.dir=<  and (fd.typechar=4 or fd.typechar=6)  and container  and k8s_api_server  and not k8s_containers  and not user_known_contact_k8s_api_server_activities
+      output: "Unexpected connection to K8s API Server from container (connection=%fd.name lport=%fd.lport rport=%fd.rport fd_type=%fd.type fd_proto=%fd.l4proto evt_type=%evt.type user=%user.name user_uid=%user.uid user_loginuid=%user.loginuid process=%proc.name proc_exepath=%proc.exepath parent=%proc.pname command=%proc.cmdline terminal=%proc.tty %container.info)"
+      priority: NOTICE
+      tags: [maturity_stable, container, network]
+
+    - rule: Netcat Remote Code Execution in Container
+      desc: Netcat Program runs inside container that allows remote code execution and may be utilized  as a part of a variety of reverse shell payload
+      condition: spawned_process  and container  and ((proc.name = "nc" and (proc.cmdline contains " -e" or proc.cmdline contains " -c")) or (proc.name = "ncat" and (proc.args contains "--sh-exec" or proc.args contains "--exec" or proc.args contains "-e " or proc.args contains "-c " or proc.args contains "--lua-exec")))
+      output: "Netcat runs inside container that allows remote code execution (evt_type=%evt.type user=%user.name user_uid=%user.uid user_loginuid=%user.loginuid process=%proc.name proc_exepath=%proc.exepath parent=%proc.pname command=%proc.cmdline terminal=%proc.tty exe_flags=%evt.arg.flags %container.info)"
+      priority: WARNING
+      tags: [maturity_stable, container, network, process]
+
+    - rule: Launch Package Management Proccess in Container
+      desc: Detect package management processes executed within containers. An excellent auditing rule to monitor general drifts  in containers. Particularly useful for newer rules like "Drop and execute new binary in container" during incident  response investigations. This helps identify common anti-patterns of ad-hoc debugging. Simultaneously, to maintain  optimal hygiene, it's recommended to prevent container drifts and instead opt for redeploying new containers.
+      condition: spawned_process and container and user.name != "_apt" and package_mgmt_procs and not package_mgmt_ancestor_procs and not user_known_package_manager_in_container and not pkg_mgmt_in_kube_proxy
+      output: "Package management process launched in container (evt_type=%evt.type user=%user.name user_uid=%user.uid user_loginuid=%user.loginuid process=%proc.name proc_exepath=%proc.exepath parent=%proc.pname command=%proc.cmdline terminal=%proc.tty exe_flags=%evt.arg.flags %container.info)"
+      priority: ERROR
+      tags: [maturity_incubating, container, process, software_mgmt, mitre_persistence, T1505]
+
+
+    - rule: Unexpected K8s NodePort Connection
+      desc: Detect attempts to utilize K8s NodePorts from a container. K8s NodePorts are accessible on the eth0 interface of  each node, and they facilitate external traffic into a Kubernetes cluster. Attackers could misuse them for  unauthorized access
+      condition: inbound_outbound  and fd.sport >= 30000  and fd.sport <= 32767
+      output: "Unexpected K8s NodePort Connection (connection=%fd.name lport=%fd.lport rport=%fd.rport fd_type=%fd.type fd_proto=%fd.l4proto evt_type=%evt.type user=%user.name user_uid=%user.uid user_loginuid=%user.loginuid process=%proc.name proc_exepath=%proc.exepath parent=%proc.pname command=%proc.cmdline terminal=%proc.tty %container.info)"
+      priority: NOTICE
+      tags: [maturity_sandbox, network, k8s, container, mitre_persistence]
+
+    - rule: Container Run as Root User
+      desc: Container detected running as the root user. This should be taken into account especially when policies disallow containers from running with  root user privileges
+      condition: spawned_process  and container  and proc.vpid=1  and user.uid=0
+      output: "Container launched with root user privilege (evt_type=%evt.type user=%user.name user_uid=%user.uid user_loginuid=%user.loginuid process=%proc.name proc_exepath=%proc.exepath parent=%proc.pname command=%proc.cmdline terminal=%proc.tty exe_flags=%evt.arg.flags %container.info)"
+      priority: INFO
+      tags: [maturity_sandbox, container, process, users, mitre_execution]
+
+    - rule: New Container Released
+      desc: Detect when a new container is created and started
+      condition: container_started
+      output: "New container released (container_id=%container.id image=%container.image.repository:%container.image.tag name=%container.name)"
+      priority: INFO
+      tags: [container, monitoring, docker]
+    
+    - macro: user_expected_terminal_shell_in_container_conditions
+      condition: (never_true)
+
+    - macro: falco_privileged_containers
+      condition: (container.image.repository startswith "falco")
+
+    - macro: user_privileged_containers
+      condition: (container.image.repository in (user_privileged_images))
+
+    - macro: known_drop_and_execute_activities
+      condition: (never_true)
+
+    - list: user_privileged_images
+      items: []
+
+    - list: known_drop_and_execute_containers
+      items: []
+
+    - macro: inbound_outbound
+      condition: (((evt.type in (accept,listen,connect) and evt.dir=<)) or (fd.typechar = 4 or fd.typechar = 6) and (fd.ip != "0.0.0.0" and fd.net != "127.0.0.0/8") and (evt.rawres >= 0 or evt.res = EINPROGRESS))
+
+    - macro: shell_procs
+      condition: (proc.name in (shell_binaries))
+
+    - macro: open_read
+      condition: (evt.type=open or evt.type=openat) and evt.is_open_read=true and fd.typechar='f' and fd.num>=0
+
+    - macro: open_directory
+      condition: (evt.type=openat or evt.type=open) and evt.arg.flags contains O_DIRECTORY
+
+    - macro: container_started
+      condition: ((evt.type = container or (spawned_process and proc.vpid=1)) and container.image.repository != incomplete)
+
+    - list: shell_binaries
+      items: [ash, bash, csh, ksh, sh, tcsh, zsh, dash]
+
+    - macro: package_mgmt_procs
+      condition: (proc.name in (package_mgmt_binaries))
+
+    - macro: package_mgmt_ancestor_procs
+      condition: (proc.pname in (package_mgmt_binaries) or
+                proc.aname[2] in (package_mgmt_binaries) or
+                proc.aname[3] in (package_mgmt_binaries) or
+                proc.aname[4] in (package_mgmt_binaries))
+
+    - macro: pkg_mgmt_in_kube_proxy
+      condition: >
+        (proc.cmdline startswith "update-alternat"
+        and container.image.repository = "registry.k8s.io/kube-proxy")
+    - macro: user_known_package_manager_in_container
+      condition: (never_true)
