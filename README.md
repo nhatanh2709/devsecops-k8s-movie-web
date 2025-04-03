@@ -11,28 +11,35 @@
 **Database**: Mongodb, Elastic Search
 
 **DevSecOps Tools:**
-- Frontend: Snyk, Trivyfs, Trivy Scan
-- Backend: Snyk, Trivyfs, Trivy Scan
+- Frontend: SonarQube, Snyk, Trivyfs, Trivy Scan, Arachni , ZAP, K6
+- Backend: SonarQube, Snyk, Trivyfs , Trivy Scan
 - Registry: Portus Registry
 - DAST: Arachni
 - Performence Testing: K6
 
 **Orchestration**: Kubernetes
 
-**CI**: Gitlab CI
+**CI/CD Pipeline**: Gitlab CI
 
-**CD**: ArgoCD
+**GitOps**: ArgoCD
 
 **Monitoring K8S Cluter:**
 - Prometheus
 - Grafana
 
-**Backup:**
-- Metadata: Firebase Storage
-- Database K8S: NFS Server
-- K8S Cluster : Velero with S3
-- K8S Service Cloud: EBS
-- K8S Service Local: NFS
+**Message Broken**: Kafka
+
+**Backup K8s Cluster**: 
+- On Cloud: Velero + S3 
+- On Premise: Velero + Minio 
+
+
+**Application Storage:**
+- Application Metadata: Firebase Storage
+
+**Kubernetes Storage**: 
+- OnPremise: NFS Ganesha  
+- OnCloud: AWS EBS
 
 **Uptime**: Uptime Kuma
 
@@ -40,19 +47,44 @@
 
 **IAC:** Terraform
 
+**VPN**: 
+- AWS Customer Gateway
+- AWS Virtual Private Gateway
+- AWS VPN Site to Site
+
+**CDN**: CloudFront
+
 **Kubernetes Cluster** : 
 - K8s Local KubeSpray
+- K8s Local Kubectl and Kubeadm
 - K8s Seft Manager Node AWS (Normal and Service Mesh)
 - EKS Manager Node Group
+- K8s On Premise and Cloud 
+
+**IDS**: Falco
+
+**Audit Logging**: 
+- ElasticSearch
+- Kibana
+- Filebeat
+- Logstash
+
+**API Gateway**: Kong Gateway
+
+**Application Firewall**: 
+- On Cloud:AWS WAFs
+- On Premise: IngressNginx and ModSecurity
 
 **Cloud** : 
 - Provider: AWS
 - Load-Balancer: AWS-LoadBalancer
 - Monitoring: CloudWatch
-- Web Application Firewall: AWS WAFs
 - Routing : Route53
 - Certificate: Certficate Manager
 - AutoScale System: Auto Scaling Group
+- Cloud Alert: AWS CloudWatch, AWS Alarm, AWS SNS, Versus Incident, Slack
+
+**Management Infrastructure**: Teleport
 
 ## 2.Chi tiết dự án:
 ### Architecture:
@@ -80,14 +112,14 @@
 
 
 ### DevSecOps Pipeline: 
-- SAST(Snyk): Là công cụ Static Application Security Testing dùng test
+- SAST(Snyk, SonarQube): Là công cụ Static Application Security Testing dùng test
 source code ReactJs và NodeJS
 - SCA(Trivy fs): Là công cụ Software Composition Analysis dùng kiểm thử
 các library và dependencies
 - Registry: Portus Registry bảo mật các docker image
 - Sau khi tiến hành thực hiện xong quy trình sẽ cập nhật lại manifest của
 service đó trên gitlab và Argocd sẽ tiến hành monitoring và tự động triển khai nó lên ( GitOps)
-- DAST(Arachni): Là công cụ Dynamic Application Security Testing dùng testcác malware của application sau khi đã deploy
+- DAST(Arachni,ZAP): Là công cụ Dynamic Application Security Testing dùng testcác malware của application sau khi đã deploy
 - Performance Testing(K6): Công cụ kiểm thử Performance của application
 
 ### Kubernetes Cluster:
@@ -128,7 +160,7 @@ service đó trên gitlab và Argocd sẽ tiến hành monitoring và tự độ
 ![Alt text](https://imgur.com/kEw7284.jpg)
 - Cluster: 
 - Master: AWS EKS Manager
--  Worker: EC2 Instance
+- Worker: EC2 Instance
 - IAC: Terraform
 - Cloud Networking: AWS VPC
 - Tools EKS Terraform: Helm Chart, AWS-EBS, AWS-LoadBalancer, AWS-Auto Scaling Group, AWS-Metrics-Server
@@ -137,8 +169,13 @@ service đó trên gitlab và Argocd sẽ tiến hành monitoring và tự độ
 - Storage Class: EBS, EFS
 - Backup: S3
 
-
-
+### Options 5: K8s On Premise and Cloud 
+![Alt text](https://imgur.com/1vDFiXe.jpg)
+- Cluster: 1 Master và 2 Worker
+- IAC: Terraform
+- Cloud Networking: AWS VPC
+- Container Runtime: Containerd
+- CNI: Calico
 
 
 
@@ -160,7 +197,7 @@ mới được triển khai ở manifest gitlab để tiến hành update cho c�
 
 
 ### Velero: 
-- Là dịch vụ backup cụm kubernetes phù hợp cho môi trường on-premise và cả trên on-cloud với nhiều options cho storage như S3, EBS,...
+- Là dịch vụ backup cụm kubernetes phù hợp cho môi trường on-premise như Minio và cả trên on-cloud với nhiều options cho storage như S3, EBS,...
 
 ### Backup:
 - Backup Metadata của application như movie, picture bằng Firebase Storage
@@ -169,6 +206,37 @@ mới được triển khai ở manifest gitlab để tiến hành update cho c�
 - Backup High Availablity Database Cluster với môi trường Premise : NFS
 - Backup  Database với môi trường Cloud : EBS
 - Backup High Availablity Database Cluster với môi trường Cloud: EFS
+
+### VPN: 
+
+- Virtual Private Gateway: Điểm cuối quản lý lưu lượng và mạng trong AWS VPC. Đây là thành phần do AWS quản lý, hoạt động như router ảo tại phía AWS để thiết lập kết nối VPN an toàn.
+- Customer Gateway: Điểm cuối quản lý lưu lượng và mạng tại hệ thống on-premise. Đây là thiết bị vật lý hoặc phần mềm tại trung tâm dữ liệu của doanh nghiệp, cấu hình để kết nối với Virtual Private Gateway của AWS.
+- VPN Site-to-Site: Kết nối Virtual Private Gateway với Customer Gateway thông qua 2 đường hầm riêng biệt, sử dụng giao thức IPSec tùy chỉnh. Hai đường hầm này hoạt động đồng thời để đảm bảo tính sẵn sàng cao.
+
+### Audit Logging:
+- Elasticsearch: Highe Available Database dùng để storage dữ liệu.
+- Kibana: Công cụ trực quan hóa dùng cho phân tích và báo cáo nhật ký.
+- Filebeat: Bộ thu thập logs chuyển tiếp dữ liệu đến Elasticsearch với nhiều loại dữ liệu như dữ liệu container Kubernetes.
+- Logstash: Đường ống xử lý làm phong phú nhật ký trước khi lưu trữ.
+
+
+### Teleport: 
+- Hạ tầng quản lý Zero Trust, Quản lý cụm on-premise Kubernetes , cân bằng tải, Máy chủ NFS,...
+
+### Falco: 
+- Hệ thống phát hiện xâm nhập (IDS) và Cảnh báo cho kernel, container, syscall, mạng, truy cập tệp, quy trình, thời gian thực, nhật ký kiểm toán với tích hợp Slack nếu cảnh báo nguy hiểm
+
+### Kong Gateway: 
+- API Gateway cho phép quản lý API an toàn, có khả năng mở rộng trên các microservices với nhiều tính năng mạnh mẽ như Rate Limiting , Monitoring Traffic, Identity Authentication Protocol 
+
+### Alert:
+- AWS CloudWatch theo dõi các chỉ số của máy chủ
+- AWS Alarm kích hoạt khi vượt ngưỡng cho phép (RAM, CPU,...) của máy chủ AWS
+- AWS SNS gửi thông báo
+- Cảnh báo được chuyển đến Versus Incident, nơi sẽ định dạng thông tin theo mẫu tùy chỉnh và gửi đến Slack
+
+### Web Application Kubernetes:
+- ModSecurity: Kết hợp với Ingress-Nginx và tiến hành dựng các Rate Limiting, Block Traffic From Country, OWASP Top 10 rule để triển khai thành WAF 
 
 ### Link:
 - Github Link: https://github.com/nhatanh2709/devsecops-k8s-movie-web
@@ -180,6 +248,13 @@ mới được triển khai ở manifest gitlab để tiến hành update cho c�
 - K8S-Local-KubeSpray: https://drive.google.com/file/d/1wKfk8NljcuQrWKQUd7t6sVMHatMa-P5M/view
 - K8S-Seft-Manager-AWS: https://drive.google.com/file/d/1p40rtNCu2HDGyF5mWNfF-Oo5gaZ09IG0/view
 - EKS-Manager-NodeGroup: https://drive.google.com/file/d/1TqxcqIi5QeHfNrQDAyWoxIfOSC4Ta8nw/view?usp=sharing
+- Falco Url:https://falco.nhatanhmovie.website
+- Kibana Url: https://kibana.nhatanhmovie.website
+- Kong Manager Url: https://kong-manager.nhatanhmovie.website
+- ArgoCD Url: https://argocd.nhatanhmovie.website
+- Kubernetes Dashboard Url: https://kubernetes-dashboard.nhatanhmovie.website
+- Teleport Url: https://teleport.nhatanhmovie.website
+- Application Url: https://movie.nhatanhweb.website
 
 
 
