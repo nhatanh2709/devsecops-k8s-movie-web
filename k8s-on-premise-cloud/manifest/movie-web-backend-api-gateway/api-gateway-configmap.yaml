@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-gateway-configmap
+  namespace: movie-web
+data:
+  .env: |
+    SERVER_1_HOST="movie-web-backend-user-service"
+    SERVER_1_PORT="3001"
+    SERVER_2_HOST="movie-web-backend-movie-service"
+    SERVER_2_PORT="3002"
+    SERVER_3_HOST="movie-web-backend-bill-service"
+    SERVER_3_PORT="3003"
