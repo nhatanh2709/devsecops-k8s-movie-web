@@ -11,4 +11,434 @@ data:
     SecRule REQUEST_HEADERS:Content-Type "application/json" \
         "id:200001,phase:1,t:none,t:lowercase,pass,nolog,ctl:requestBodyProcessor=JSON,setvar:tx.blocked_rule_id=200001,setenv:blocked_rule_id=200001"
 
-    SecRule REQUEST_HEADERS:X-Country-Code "!@streq VN" "id:100001,phase:1,deny,status:403,setvar:tx.blocked_rule_id=100001,setenv:blocked_rule_id=100001"
+    SecRule REQUEST_HEADERS:X-Country-Code "!@streq VN" \
+        "id:100001,\
+        phase:1,\
+        log,\
+        deny,\
+        status:403,\
+        setvar:tx.blocked_rule_id=100001,\
+        setenv:blocked_rule_id=100001,\
+        tag:'security-control',\
+        tag:'geo-restriction',\
+        tag:'PCI/12.1',\
+        tag:'paranoia-level/2',\
+        severity:'WARNING',\
+        ver:'custom-rules/1.0',\
+        msg:'Blocking non-Vietnamese traffic based on X-Country-Code header'"
+
+    # Block all requests from non Vietname in IPs in header X-Country-Code
+    # SecRule REQUEST_HEADERS:X-Country-Code "!@streq VN" "id:100001,log,phase:1,deny,status:403,setvar:tx.blocked_rule_id=100001,setenv:blocked_rule_id=100001"
+
+    # Rate limiting - Block IP making too many requests in a short time
+    SecRule REQUEST_HEADERS:X-Forwarded-For "@rx ^([^,]+)" \
+        "id:100002,\
+        phase:1,\
+        pass,\
+        log,\
+        capture,\
+        setvar:tx.real_ip=%{TX.1},\
+        tag:'security-control',\
+        tag:'rate-limiting',\
+        tag:'paranoia-level/1',\
+        severity:'NOTICE',\
+        ver:'custom-rules/1.0',\
+        msg:'Capturing real IP from X-Forwarded-For header: %{tx.real_ip}'"
+
+
+    SecRule TX:real_ip "!@streq \'\'" \
+        "id:100005,\
+        phase:1,\
+        pass,\
+        nolog,\
+        setvar:ip.rate_counter=+1,\
+        expirevar:ip.rate_counter=15,\
+        tag:'security-control',\
+        tag:'rate-limiting',\
+        tag:'paranoia-level/1',\
+        severity:'NOTICE',\
+        ver:'custom-rules/1.0'"
+
+    SecRule IP:rate_counter "@gt 3" \
+        "id:100004,\
+        phase:1,\
+        deny,\
+        status:429,\
+        setvar:tx.block_rule_id=100004,\
+        setenv:blocked_rule_id=100004,\
+        tag:'security-control',\
+        tag:'rate-limiting',\
+        tag:'PCI/6.5.8',\
+        tag:'OWASP_CRS',\
+        tag:'paranoia-level/1',\
+        severity:'WARNING',\
+        ver:'custom-rules/1.0'"
+
+    SecRule IP:rate_counter "@ge 0" \
+        "id:100006,\
+        phase:1,\
+        pass,\
+        log,\
+        tag:'security-control',\
+        tag:'rate-limiting',\
+        tag:'paranoia-level/1',\
+        severity:'NOTICE',\
+        ver:'custom-rules/1.0',\
+        msg:'Rate counter for IP %{tx.real_ip}: %{ip.rate_counter}'"
+
+    SecRule TX:DETECTION_PARANOIA_LEVEL "@lt 1" "id:930011,phase:1,pass,nolog,tag:'OWASP_CRS',ver:'OWASP_CRS/4.14.0-dev',skipAfter:END-REQUEST-930-APPLICATION-ATTACK-LFI"
+    SecRule TX:DETECTION_PARANOIA_LEVEL "@lt 1" "id:930012,phase:2,pass,nolog,tag:'OWASP_CRS',ver:'OWASP_CRS/4.14.0-dev',skipAfter:END-REQUEST-930-APPLICATION-ATTACK-LFI"
+
+    SecRule REQUEST_URI_RAW|ARGS|REQUEST_HEADERS|!REQUEST_HEADERS:Referer|FILES|XML:/* "@rx (?i)(?:[/\x5c]|%(?:2(?:f|5(?:2f|5c|c(?:1%259c|0%25af))|%46)|5c|c(?:0%(?:[2aq]f|5c|9v)|1%(?:[19p]c|8s|af))|(?:bg%q|(?:e|f(?:8%8)?0%8)0%80%a)f|u(?:221[56]|EFC8|F025|002f)|%3(?:2(?:%(?:%6|4)6|F)|5%%63)|1u)|0x(?:2f|5c))(?:\.(?:%0[01]|\?)?|\?\.?|%(?:2(?:(?:5(?:2|c0%25a))?e|%45)|c0(?:\.|%[256aef]e)|u(?:(?:ff0|002)e|2024)|%32(?:%(?:%6|4)5|E)|(?:e|f(?:(?:8|c%80)%8)?0%8)0%80%ae)|0x2e){2,3}(?:[/\x5c]|%(?:2(?:f|5(?:2f|5c|c(?:1%259c|0%25af))|%46)|5c|c(?:0%(?:[2aq]f|5c|9v)|1%(?:[19p]c|8s|af))|(?:bg%q|(?:e|f(?:8%8)?0%8)0%80%a)f|u(?:221[56]|EFC8|F025|002f)|%3(?:2(?:%(?:%6|4)6|F)|5%%63)|1u)|0x(?:2f|5c))" \
+        "id:930100,\
+        phase:2,\
+        deny,\
+        capture,\
+        t:none,\
+        msg:\'Path Traversal Attack (/../) or (/.../)\',\
+        logdata:\'Matched Data: %{TX.0} found within %{MATCHED_VAR_NAME}: %{MATCHED_VAR}\',\
+        tag:'application-multi',\
+        tag:'language-multi',\
+        tag:'platform-multi',\
+        tag:'attack-lfi',\
+        tag:'paranoia-level/1',\
+        tag:'OWASP_CRS',\
+        tag:'OWASP_CRS/ATTACK-LFI',\
+        tag:'capec/1000/255/153/126',\
+        ver:'OWASP_CRS/4.14.0-dev',\
+        severity:'CRITICAL',\
+        setvar:'tx.inbound_anomaly_score_pl1=+%{tx.critical_anomaly_score}',\
+        setvar:'tx.lfi_score=+%{tx.critical_anomaly_score}',\
+        setvar:'tx.blocked_rule_id=930100',\
+        setenv:'blocked_rule_id=930100'"
+
+    SecRule REQUEST_COOKIES|!REQUEST_COOKIES:/__utm/|REQUEST_COOKIES_NAMES|ARGS_NAMES|ARGS|XML:/* "@pmFromFile /etc/nginx/owasp-modsecurity-crs/lfi-os-files.data" \
+        "id:930120,\
+        phase:2,\
+        deny,\
+        capture,\
+        t:none,t:utf8toUnicode,t:urlDecodeUni,t:normalizePathWin,\
+        msg:\'OS File Access Attempt\',\
+        logdata:\'Matched Data: %{TX.0} found within %{MATCHED_VAR_NAME}: %{MATCHED_VAR}\',\
+        tag:'application-multi',\
+        tag:'language-multi',\
+        tag:'platform-multi',\
+        tag:'attack-lfi',\
+        tag:'paranoia-level/1',\
+        tag:'OWASP_CRS',\
+        tag:'OWASP_CRS/ATTACK-LFI',\
+        tag:'capec/1000/255/153/126',\
+        tag:'PCI/6.5.4',\
+        ver:'OWASP_CRS/4.14.0-dev',\
+        severity:'CRITICAL',\
+        setvar:'tx.lfi_score=+%{tx.critical_anomaly_score}',\
+        setvar:'tx.inbound_anomaly_score_pl1=+%{tx.critical_anomaly_score}',\
+        setvar:'tx.blocked_rule_id=930120',\
+        setenv:'blocked_rule_id=930120'"
+
+    SecRule REQUEST_HEADERS:Referer|REQUEST_HEADERS:User-Agent "@pmFromFile /etc/nginx/owasp-modsecurity-crs/lfi-os-files.data" \
+        "id:930121,\
+        phase:1,\
+        deny,\
+        capture,\
+        t:none,t:utf8toUnicode,t:urlDecodeUni,t:normalizePathWin,\
+        msg:'OS File Access Attempt in REQUEST_HEADERS',\
+        logdata:'Matched Data: %{TX.0} found within %{MATCHED_VAR_NAME}: %{MATCHED_VAR}',\
+        tag:'application-multi',\
+        tag:'language-multi',\
+        tag:'platform-multi',\
+        tag:'attack-lfi',\
+        tag:'paranoia-level/2',\
+        tag:'OWASP_CRS',\
+        tag:'OWASP_CRS/ATTACK-LFI',\
+        tag:'capec/1000/255/153/126',\
+        tag:'PCI/6.5.4',\
+        ver:'OWASP_CRS/4.14.0-dev',\
+        severity:'CRITICAL',\
+        setvar:'tx.lfi_score=+%{tx.critical_anomaly_score}',\
+        setvar:'tx.inbound_anomaly_score_pl2=+%{tx.critical_anomaly_score}',\
+        setvar:'tx.blocked_rule_id=930121',\
+        setenv:'blocked_rule_id=930121'"
+    
+    SecRule REQUEST_FILENAME "@pmFromFile /etc/nginx/owasp-modsecurity-crs/lfi-os-files.data" \
+        "id:930130,\
+        phase:1,\
+        deny,\
+        capture,\
+        t:none,t:utf8toUnicode,t:urlDecodeUni,t:normalizePathWin,\
+        msg:\'Restricted File Access Attempt\',\
+        logdata:\'Matched Data: %{TX.0} found within %{MATCHED_VAR_NAME}: %{MATCHED_VAR}\',\
+        tag:'application-multi',\
+        tag:'language-multi',\
+        tag:'platform-multi',\
+        tag:'attack-lfi',\
+        tag:'paranoia-level/1',\
+        tag:'OWASP_CRS',\
+        tag:'OWASP_CRS/ATTACK-LFI',\
+        tag:'capec/1000/255/153/126',\
+        tag:'PCI/6.5.4',\
+        ver:'OWASP_CRS/4.14.0-dev',\
+        severity:'CRITICAL',\
+        setvar:'tx.lfi_score=+%{tx.critical_anomaly_score}',\
+        setvar:'tx.inbound_anomaly_score_pl1=+%{tx.critical_anomaly_score}',\
+        setvar:'tx.blocked_rule_id=930130',\
+        setenv:'blocked_rule_id=930130'"
+
+    SecRule TX:DETECTION_PARANOIA_LEVEL "@lt 1" "id:921011,phase:1,pass,nolog,tag:'OWASP_CRS',ver:'OWASP_CRS/4.14.0-dev',skipAfter:END-REQUEST-921-PROTOCOL-ATTACK"
+    SecRule TX:DETECTION_PARANOIA_LEVEL "@lt 1" "id:921012,phase:2,pass,nolog,tag:'OWASP_CRS',ver:'OWASP_CRS/4.14.0-dev',skipAfter:END-REQUEST-921-PROTOCOL-ATTACK"
+    SecRule REQUEST_HEADERS_NAMES|REQUEST_HEADERS "@rx [\n\r]" \
+        "id:921140,\
+        phase:1,\
+        deny,\
+        capture,\
+        t:none,t:urlDecodeUni,\
+        msg:\'HTTP Header Injection Attack via headers\',\
+        logdata:\'Matched Data: %{TX.0} found within %{MATCHED_VAR_NAME}: %{MATCHED_VAR}\',\
+        tag:'application-multi',\
+        tag:'language-multi',\
+        tag:'platform-multi',\
+        tag:'attack-protocol',\
+        tag:'paranoia-level/1',\
+        tag:'OWASP_CRS',\
+        tag:'OWASP_CRS/PROTOCOL-ATTACK',\
+        tag:'capec/1000/210/272/220/273',\
+        ver:'OWASP_CRS/4.14.0-dev',\
+        severity:'CRITICAL',\
+        setvar:'tx.http_violation_score=+%{tx.critical_anomaly_score}',\
+        setvar:'tx.inbound_anomaly_score_pl1=+%{tx.critical_anomaly_score}',\
+        setvar:'tx.blocked_rule_id=921140',\
+        setenv:'blocked_rule_id=921140'"
+
+    SecRule ARGS_NAMES "@rx [\n\r]" \
+        "id:921150,\
+        phase:2,\
+        deny,\
+        capture,\
+        t:none,\
+        msg:\'HTTP Header Injection Attack via payload (CR/LF detected)\',\
+        logdata:\'Matched Data: %{TX.0} found within %{MATCHED_VAR_NAME}: %{MATCHED_VAR}\',\
+        tag:'application-multi',\
+        tag:'language-multi',\
+        tag:'platform-multi',\
+        tag:'attack-protocol',\
+        tag:'paranoia-level/1',\
+        tag:'OWASP_CRS',\
+        tag:'OWASP_CRS/PROTOCOL-ATTACK',\
+        tag:'capec/1000/210/272/220/33',\
+        ver:'OWASP_CRS/4.14.0-dev',\
+        severity:'CRITICAL',\
+        setvar:'tx.http_violation_score=+%{tx.critical_anomaly_score}',\
+        setvar:'tx.inbound_anomaly_score_pl1=+%{tx.critical_anomaly_score}',\
+        setvar:'tx.blocked_rule_id=921150',\
+        setenv:'blocked_rule_id=921150'"
+    
+    SecRule ARGS_GET_NAMES|ARGS_GET "@rx [\n\r]+(?:\s|location|refresh|(?:set-)?cookie|(?:x-)?(?:forwarded-(?:for|host|server)|host|via|remote-ip|remote-addr|originating-IP))\s*:" \
+        "id:921160,\
+        phase:1,\
+        deny,\
+        capture,\
+        t:none,t:lowercase,\
+        msg:\'HTTP Header Injection Attack via payload (CR/LF and header-name detected)\',\
+        logdata:'Matched Data: %{TX.0} found within %{MATCHED_VAR_NAME}: %{MATCHED_VAR}',\
+        tag:'application-multi',\
+        tag:'language-multi',\
+        tag:'platform-multi',\
+        tag:'attack-protocol',\
+        tag:'paranoia-level/1',\
+        tag:'OWASP_CRS',\
+        tag:'OWASP_CRS/PROTOCOL-ATTACK',\
+        tag:'capec/1000/210/272/220/33',\
+        ver:'OWASP_CRS/4.14.0-dev',\
+        severity:'CRITICAL',\
+        setvar:'tx.http_violation_score=+%{tx.critical_anomaly_score}',\
+        setvar:'tx.inbound_anomaly_score_pl1=+%{tx.critical_anomaly_score}',\
+        setvar:'tx.blocked_rule_id=921160',\
+        setenv:'blocked_rule_id=921160'"
+
+    SecRule REQUEST_FILENAME "@rx [\n\r]" \
+        "id:921190,\
+        phase:1,\
+        deny,\
+        t:none,t:urlDecodeUni,\
+        msg:\'HTTP Splitting (CR/LF in request detected)\',\
+        logdata:\'Matched Data: %{TX.0} found within %{MATCHED_VAR_NAME}: %{MATCHED_VAR}\',\
+        tag:'application-multi',\
+        tag:'language-multi',\
+        tag:'platform-multi',\
+        tag:'attack-protocol',\
+        tag:'paranoia-level/1',\
+        tag:'OWASP_CRS',\
+        tag:'OWASP_CRS/PROTOCOL-ATTACK',\
+        tag:'capec/1000/210/272/220/34',\
+        ver:'OWASP_CRS/4.14.0-dev',\
+        severity:'CRITICAL',\
+        setvar:'tx.http_violation_score=+%{tx.critical_anomaly_score}',\
+        setvar:'tx.inbound_anomaly_score_pl1=+%{tx.critical_anomaly_score}',\
+        setvar:'tx.blocked_rule_id=921190',\
+        setenv:'blocked_rule_id=921190'"
+
+    SecRule REQUEST_COOKIES|!REQUEST_COOKIES:/__utm/|REQUEST_COOKIES_NAMES|ARGS_NAMES|ARGS|XML:/* "@rx ^[^:\(\)\&\|\!\<\>\~]*\)\s*(?:\((?:[^,\(\)\=\&\|\!\<\>\~]+[><~]?=|\s*[&!|]\s*(?:\)|\()?\s*)|\)\s*\(\s*[\&\|\!]\s*|[&!|]\s*\([^\(\)\=\&\|\!\<\>\~]+[><~]?=[^:\(\)\&\|\!\<\>\~]*)" \
+        "id:921200,\
+        phase:2,\
+        deny,\
+        capture,\
+        t:none,t:htmlEntityDecode,\
+        msg:\'LDAP Injection Attack\',\
+        logdata:\'Matched Data: %{TX.0} found within %{MATCHED_VAR_NAME}: %{MATCHED_VAR}\',\
+        tag:'application-multi',\
+        tag:'language-ldap',\
+        tag:'platform-multi',\
+        tag:'paranoia-level/1',\
+        tag:'OWASP_CRS',\
+        tag:'OWASP_CRS/PROTOCOL-ATTACK',\
+        tag:'capec/1000/152/248/136',\
+        ver:'OWASP_CRS/4.14.0-dev',\
+        severity:'CRITICAL',\
+        setvar:'tx.inbound_anomaly_score_pl1=+%{tx.critical_anomaly_score}',\
+        setvar:'tx.blocked_rule_id=921200',\
+        setenv:'blocked_rule_id=921200'"
+
+    SecRule REQUEST_HEADERS:Content-Type "@rx ^[^\s\x0b,;]+[\s\x0b,;].*?\b(?:((?:tex|multipar)t|application)|((?:audi|vide)o|image|cs[sv]|(?:vn|relate)d|p(?:df|lain)|json|(?:soa|cs)p|x(?:ml|-www-form-urlencoded)|form-data|x-amf|(?:octe|repor)t|stream)|([\+/]))\b" \
+        "id:921422,\
+        phase:1,\
+        deny,\
+        capture,\
+        t:none,t:lowercase,\
+        msg:\'Content-Type header: Dangerous content type outside the mime type declaration\',\
+        logdata:\'Matched Data: %{TX.0} found within %{MATCHED_VAR_NAME}: %{MATCHED_VAR}\',\
+        tag:'application-multi',\
+        tag:'language-multi',\
+        tag:'platform-multi',\
+        tag:'attack-protocol',\
+        tag:'paranoia-level/1',\
+        tag:'OWASP_CRS',\
+        tag:'OWASP_CRS/PROTOCOL-ATTACK',\
+        tag:'capec/1000/255/153',\
+        tag:'PCI/12.1',\
+        ver:'OWASP_CRS/4.14.0-dev',\
+        severity:'CRITICAL',\
+        setvar:'tx.inbound_anomaly_score_pl2=+%{tx.critical_anomaly_score}',\
+        setvar:'tx.blocked_rule_id=921422',\
+        setenv:'blocked_rule_id=921422'"
+        
+    SecRule ARGS_NAMES "@rx (][^\]]+$|][^\]]+\[)" \
+        "id:921210,\
+        phase:2,\
+        pass,\
+        log,\
+        msg:\'HTTP Parameter Pollution after detecting bogus char after parameter array\',\
+        logdata:\'Matched Data: %{TX.0} found within %{MATCHED_VAR_NAME}: %{MATCHED_VAR}\',\
+        tag:'application-multi',\
+        tag:'language-multi',\
+        tag:'platform-multi',\
+        tag:'attack-protocol',\
+        tag:'paranoia-level/3',\
+        tag:'OWASP_CRS',\
+        tag:'OWASP_CRS/PROTOCOL-ATTACK',\
+        tag:'capec/1000/152/137/15/460',\
+        ver:'OWASP_CRS/4.14.0-dev',\
+        severity:'CRITICAL',\
+        setvar:'tx.http_violation_score=+%{tx.critical_anomaly_score}',\
+        setvar:'tx.inbound_anomaly_score_pl3=+%{tx.critical_anomaly_score}',\
+        setvar:'tx.blocked_rule_id=921210',\
+        setenv:'blocked_rule_id=921210'"
+
+    SecRule TX:DETECTION_PARANOIA_LEVEL "@lt 1" "id:931011,phase:1,pass,nolog,tag:'OWASP_CRS',ver:'OWASP_CRS/4.14.0-dev',skipAfter:END-REQUEST-931-APPLICATION-ATTACK-RFI"
+    SecRule TX:DETECTION_PARANOIA_LEVEL "@lt 1" "id:931012,phase:2,pass,nolog,tag:'OWASP_CRS',ver:'OWASP_CRS/4.14.0-dev',skipAfter:END-REQUEST-931-APPLICATION-ATTACK-RFI"
+    SecRule ARGS "@rx ^(?i:file|ftps?|https?)://(?:\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})" \
+        "id:931100,\
+        phase:2,\
+        deny,\
+        capture,\
+        t:none,\
+        msg:\'Possible Remote File Inclusion (RFI) Attack: URL Parameter using IP Address\',\
+        logdata:\'Matched Data: %{TX.0} found within %{MATCHED_VAR_NAME}: %{MATCHED_VAR}\',\
+        tag:'application-multi',\
+        tag:'language-multi',\
+        tag:'platform-multi',\
+        tag:'attack-rfi',\
+        tag:'paranoia-level/1',\
+        tag:'OWASP_CRS',\
+        tag:'OWASP_CRS/ATTACK-RFI',\
+        tag:'capec/1000/152/175/253',\
+        ver:'OWASP_CRS/4.14.0-dev',\
+        severity:'CRITICAL',\
+        setvar:'tx.rfi_score=+%{tx.critical_anomaly_score}',\
+        setvar:'tx.inbound_anomaly_score_pl1=+%{tx.critical_anomaly_score}',\
+        setvar:'tx.blocked_rule_id=931100',\
+        setenv:'blocked_rule_id=931100'"
+
+    SecRule ARGS "@rx ^(?i:file|ftps?|https?).*?\?+$" \
+        "id:931120,\
+        phase:2,\
+        deny,\
+        capture,\
+        t:none,\
+        msg:\'Possible Remote File Inclusion (RFI) Attack: URL Payload Used w/Trailing Question Mark Character (?)\',\
+        logdata:\'Matched Data: %{TX.0} found within %{MATCHED_VAR_NAME}: %{MATCHED_VAR}\',\
+        tag:'application-multi',\
+        tag:'language-multi',\
+        tag:'platform-multi',\
+        tag:'attack-rfi',\
+        tag:'paranoia-level/1',\
+        tag:'OWASP_CRS',\
+        tag:'OWASP_CRS/ATTACK-RFI',\
+        tag:'capec/1000/152/175/253',\
+        ver:'OWASP_CRS/4.14.0-dev',\
+        severity:'CRITICAL',\
+        setvar:'tx.rfi_score=+%{tx.critical_anomaly_score}',\
+        setvar:'tx.inbound_anomaly_score_pl1=+%{tx.critical_anomaly_score}',\
+        setvar:'tx.blocked_rule_id=931120',\
+        setenv:'blocked_rule_id=931120'"
+
+    SecRule ARGS "@rx (?i)(?:(?:url|jar):)?(?:a(?:cap|f[ps]|ttachment)|b(?:eshare|itcoin|lob)|c(?:a(?:llto|p)|id|vs|ompress.(?:zlib|bzip2))|d(?:a(?:v|ta)|ict|n(?:s|tp))|e(?:d2k|xpect)|f(?:(?:ee)?d|i(?:le|nger|sh)|tps?)|g(?:it|o(?:pher)?|lob)|h(?:323|ttps?)|i(?:ax|cap|(?:ma|p)ps?|rc[6s]?)|ja(?:bbe)?r|l(?:dap[is]?|ocal_file)|m(?:a(?:ilto|ven)|ms|umble)|n(?:e(?:tdoc|ws)|fs|ntps?)|ogg|p(?:aparazzi|h(?:ar|p)|op(?:2|3s?)|r(?:es|oxy)|syc)|r(?:mi|sync|tm(?:f?p)?|ar)|s(?:3|ftp|ips?|m(?:[bs]|tps?)|n(?:ews|mp)|sh(?:2(?:.(?:s(?:hell|(?:ft|c)p)|exec|tunnel))?)?|vn(?:\+ssh)?)|t(?:e(?:amspeak|lnet)|ftp|urns?)|u(?:dp|nreal|t2004)|v(?:entrilo|iew-source|nc)|w(?:ebcal|ss?)|x(?:mpp|ri)|zip)://(?:[^@]+@)?([^/]*)" \
+        "id:931130,\
+        phase:2,\
+        deny,\
+        capture,\
+        t:none,\
+        msg:\'Possible Remote File Inclusion (RFI) Attack: Off-Domain Reference/Link\',\
+        logdata:\'Matched Data: %{TX.0} found within %{MATCHED_VAR_NAME}: %{MATCHED_VAR}\',\
+        tag:'application-multi',\
+        tag:'language-multi',\
+        tag:'platform-multi',\
+        tag:'attack-rfi',\
+        tag:'paranoia-level/2',\
+        tag:'OWASP_CRS',\
+        tag:'OWASP_CRS/ATTACK-RFI',\
+        tag:'capec/1000/152/175/253',\
+        ver:'OWASP_CRS/4.14.0-dev',\
+        severity:'CRITICAL',\
+        setvar:'tx.rfi_parameter_%{MATCHED_VAR_NAME}=.%{tx.1}',\
+        chain"
+        SecRule TX:/rfi_parameter_.*/ "!@endsWith .%{request_headers.host}" \
+            "setvar:'tx.rfi_score=+%{tx.critical_anomaly_score}',\
+            setvar:'tx.inbound_anomaly_score_pl2=+%{tx.critical_anomaly_score}',\
+            setvar:'tx.blocked_rule_id=931130',\
+            setenv:'blocked_rule_id=931130'"
+
+    SecRule REQUEST_FILENAME "@rx (?i)(?:(?:url|jar):)?(?:a(?:cap|f[ps]|ttachment)|b(?:eshare|itcoin|lob)|c(?:a(?:llto|p)|id|vs|ompress.(?:zlib|bzip2))|d(?:a(?:v|ta)|ict|n(?:s|tp))|e(?:d2k|xpect)|f(?:(?:ee)?d|i(?:le|nger|sh)|tps?)|g(?:it|o(?:pher)?|lob)|h(?:323|ttps?)|i(?:ax|cap|(?:ma|p)ps?|rc[6s]?)|ja(?:bbe)?r|l(?:dap[is]?|ocal_file)|m(?:a(?:ilto|ven)|ms|umble)|n(?:e(?:tdoc|ws)|fs|ntps?)|ogg|p(?:aparazzi|h(?:ar|p)|op(?:2|3s?)|r(?:es|oxy)|syc)|r(?:mi|sync|tm(?:f?p)?|ar)|s(?:3|ftp|ips?|m(?:[bs]|tps?)|n(?:ews|mp)|sh(?:2(?:.(?:s(?:hell|(?:ft|c)p)|exec|tunnel))?)?|vn(?:\+ssh)?)|t(?:e(?:amspeak|lnet)|ftp|urns?)|u(?:dp|nreal|t2004)|v(?:entrilo|iew-source|nc)|w(?:ebcal|ss?)|x(?:mpp|ri)|zip)://(?:[^@]+@)?([^/]*)" \
+        "id:931131,\
+        phase:1,\
+        deny,\
+        capture,\
+        t:none,t:urlDecodeUni,\
+        msg:\'Possible Remote File Inclusion (RFI) Attack: Off-Domain Reference/Link\',\
+        logdata:\'Matched Data: %{TX.0} found within %{MATCHED_VAR_NAME}: %{MATCHED_VAR}\',\
+        tag:'application-multi',\
+        tag:'language-multi',\
+        tag:'platform-multi',\
+        tag:'attack-rfi',\
+        tag:'paranoia-level/2',\
+        tag:'OWASP_CRS',\
+        tag:'OWASP_CRS/ATTACK-RFI',\
+        tag:'capec/1000/152/175/253',\
+        ver:'OWASP_CRS/4.14.0-dev',\
+        severity:'CRITICAL',\
+        setvar:'tx.rfi_parameter_%{MATCHED_VAR_NAME}=.%{tx.1}',\
+        chain"
+        SecRule TX:/rfi_parameter_.*/ "!@endsWith .%{request_headers.host}" \
+            "setvar:'tx.rfi_score=+%{tx.critical_anomaly_score}',\
+            setvar:'tx.inbound_anomaly_score_pl2=+%{tx.critical_anomaly_score}',\
+            setvar:'tx.blocked_rule_id=931131',\
+            setenv:'blocked_rule_id=931131'"
