@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bill-service-deployment
+  namespace: movie-web
+  labels:
+    app: bill-service
+spec:
+  replicas: 1
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      app: bill-service
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: bill-service
+    spec:
+      containers:
+        - name: movie-web-backend-bill-service
+          image: dev.nhatanhdevops.website/onlineshop/movie-web-backend-bill-service:v10_d9b43af2
+          ports:
+            - containerPort: 3003
+              protocol: TCP  
+              name: tcp
+          resources:
+            requests:
+              memory: "256Mi"
+          volumeMounts:
+            - mountPath: /home/node/app/.env
+              name: bill-service-configmap
+              subPath: .env
+      imagePullSecrets:
+        - name: auth-registry
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      volumes:
+        - name: bill-service-configmap
+          configMap:
+            defaultMode: 420
+            name: bill-service-configmap

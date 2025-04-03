@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: movie-service-deployment
+  namespace: movie-web
+  labels:
+    app: movie-service
+spec:
+  replicas: 1
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      app: movie-service
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: movie-service
+    spec:
+      containers:
+        - name: movie-web-backend-movie-service
+          image: dev.nhatanhdevops.website/onlineshop/movie-web-backend-movie-service:v11_d9b43af2
+          ports:
+            - containerPort: 3002
+              protocol: TCP  
+              name: tcp
+          resources:
+            requests:
+              memory: "256Mi"
+          volumeMounts:
+            - name: movie-service-configmap
+              mountPath: /home/node/app/.env
+              subPath: .env
+      imagePullSecrets:
+        - name: auth-registry
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      volumes:
+        - name: movie-service-configmap
+          configMap:
+            defaultMode: 420
+            name: movie-service-configmap
+

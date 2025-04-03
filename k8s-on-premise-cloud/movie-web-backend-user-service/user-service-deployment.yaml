@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service-deployment
+  namespace: movie-web
+  labels:
+    app: user-service
+spec:
+  replicas: 1
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      app: user-service
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: user-service
+    spec:
+      containers:
+        - name: movie-web-backend-user-service
+          image: dev.nhatanhdevops.website/onlineshop/movie-web-backend-user-service:v10_ca8738fd
+          ports:
+            - containerPort: 3001
+              protocol: TCP  
+              name: tcp
+          resources:
+            requests:
+              memory: "256Mi"
+          volumeMounts:
+            - name: user-service-configmap
+              mountPath: /home/node/app/.env
+              subPath: .env
+      imagePullSecrets:
+        - name: auth-registry
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      volumes:
+        - name: user-service-configmap
+          configMap:
+            defaultMode: 420
+            name: user-service-configmap

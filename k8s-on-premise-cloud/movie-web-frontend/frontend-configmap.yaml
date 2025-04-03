@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: movie-web-frontend-configmap
+  namespace: movie-web
+data:
+  .env: |
+    REACT_APP_GENERATE_SOURCEMAP="false"
+    REACT_APP_API_GATEWAY_HOST="k8s-api-gateway"
+    REACT_APP_API_GATEWAY_PORT="8800"
+    REACT_APP_GATEWAY_BACKEND_URL = "https://kong-proxy.nhatanhmovie.website"
