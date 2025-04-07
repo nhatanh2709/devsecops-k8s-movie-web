@@ -1,0 +1,44 @@
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  namespace: movie-web
+  name: aws-fis 
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  namespace: movie-web
+  name: role-experiments
+rules:
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: [ "get", "create", "patch", "delete"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["create", "list", "get", "delete", "deletecollection"]
+- apiGroups: [""]
+  resources: ["pods/ephemeralcontainers"]
+  verbs: ["update"]
+- apiGroups: [""]
+  resources: ["pods/exec"]
+  verbs: ["create"]
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: bind-role-experiments
+  namespace: movie-web
+subjects:
+- kind: ServiceAccount
+  name: aws-fis
+  namespace: movie-web
+- apiGroup: rbac.authorization.k8s.io
+  kind: User
+  name: fis-experiment
+roleRef:
+  kind: Role
+  name: role-experiments
+  apiGroup: rbac.authorization.k8s.io

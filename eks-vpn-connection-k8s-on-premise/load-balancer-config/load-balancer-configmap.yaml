@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: load-balancer-configmap
+  namespace: movie-web
+data:
+  default.conf: |
+    upstream backend_servers {
+      server 192.168.1.131:30080;
+    }
+
+    server {
+        client_max_body_size 20M;
+        listen 80;
+        server_name eks-movie.nhatanhweb.website;
+        access_log /var/log/nginx/movie.nhatanhweb.website.access.log;
+        error_log /var/log/nginx/movie.nhatanhweb.website.error.log;
+        location / {
+            proxy_pass http://backend_servers;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header X-Traffic-ID "aws-movie-web-traffic";
+            proxy_set_header User-Agent $http_user_agent;
+            proxy_connect_timeout 300s;
+            proxy_send_timeout 300s;
+            proxy_read_timeout 300s;
+        }
+    }
