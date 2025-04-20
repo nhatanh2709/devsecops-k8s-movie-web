@@ -1,0 +1,28 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: cleanup-services-no-endpoints
+  namespace: movie-web
+spec:
+  schedule: "*/1 * * * *"  
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: clean-service-non-endpoints
+          containers:
+          - name: kubectl
+            image: bitnami/kubectl
+            command:
+            - /bin/bash
+            - -c
+            - |
+              kubectl get services --all-namespaces -o json | \
+              jq -r '.items[] | select(.metadata.namespace == "test" or .metadata.namespace == "movie-web") | .metadata.namespace + " " + .metadata.name' | \
+              while read ns svc; do
+                endpoints=$(kubectl get endpoints "$svc" -n "$ns" -o json 2>/dev/null)
+                if [[ $(echo "$endpoints" | jq -r '.subsets == null') == "true" ]]; then   
+                  kubectl delete service "$svc" -n "$ns"
+                fi
+              done
+          restartPolicy: OnFailure

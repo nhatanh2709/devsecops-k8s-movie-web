@@ -1,0 +1,35 @@
+apiVersion: templates.gatekeeper.sh/v1beta1
+kind: ConstraintTemplate
+metadata:
+  name: k8sallowedexternalips
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sAllowedExternalIPs
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8sallowedexternalips
+        
+        import future.keywords.in
+        
+        allowed_ips := {
+          "142.250.0.0/16",    # Google
+          "172.217.0.0/16",    # Google
+          "40.112.0.0/13",     # Microsoft
+          "52.96.0.0/12",      # Microsoft
+          "20.0.0.0/8",        # Microsoft
+          "171.239.11.33/32"   # Public On Premise IP      
+        }
+
+        violation[{"msg": msg}] {
+          input.review.object.kind == "Service"
+          some ip in input.review.object.spec.externalIPs
+          not is_allowed(ip)
+          msg := sprintf("ExternalIP '%s' is not in the allowed whitelist (Allowed: Google/Microsoft/8.8.8.8)", [ip])
+        }
+
+        is_allowed(ip) {
+          net.cidr_contains(allowed_ips[_], ip)
+        }

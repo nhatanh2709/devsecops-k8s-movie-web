@@ -1,0 +1,43 @@
+apiVersion: templates.gatekeeper.sh/v1beta1
+kind: ConstraintTemplate
+metadata:
+  name: k8sblockrootcontainers
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sBlockRootContainers
+      validation:
+        openAPIV3Schema:
+          properties:
+            message:
+              type: string
+              default: "Container is not allowed to run as root"
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8sblockrootcontainers
+
+        violation[{"msg": msg}] {
+            container := input.review.object.spec.containers[_]
+            is_run_as_root(container)
+            msg := sprintf("Container '%v' is not allowed to run as root", [container.name])
+        }
+
+        violation[{"msg": msg}] {
+            container := input.review.object.spec.initContainers[_]
+            is_run_as_root(container)
+            msg := sprintf("InitContainer '%v' is not allowed to run as root", [container.name])
+        }
+
+        is_run_as_root(container) {
+            container.securityContext.runAsUser == 0
+        }
+
+        is_run_as_root(container) {
+            not has_field(container, "securityContext")
+        }
+
+        has_field(obj, field) = true {
+            obj[field]
+        }

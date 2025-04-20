@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: scanner-user-agents-configmap
+  namespace: ingress-nginx
+data:
+  scanner-user-agents.data: |
+    Arachni
+    betabot
+    bewica-security-scan
+    BFAC
+    commix
+    Detectify
+    dirbuster
+    fimap
+    fuzz faster
+    gobuster
+    havij
+    hexometer
+    jbrofuzz
+    jorgee
+    libwhisker
+    masscan
+    morfeus
+    Mozlila
+    nessus
+    netlab360
+    netsparker
+    nikto
+    nmap
+    nuclei
+    openvas
+    sitelockspider
+    sqlmap
+    sysscan
+    TsunamiSecurityScanner
+    webbandit
+    webshag
+    wfuzz
+    whatweb
+    wprecon
+    wpscan
+    zgrab
+    zmeu

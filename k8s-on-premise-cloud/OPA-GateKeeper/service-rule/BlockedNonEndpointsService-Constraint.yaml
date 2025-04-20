@@ -1,0 +1,17 @@
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: ServiceNoEndpoints
+metadata:
+  name: service-no-endpoints
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Service"]
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values: ["movie-web", "test"]
+  parameters:
+    minutes: 5
+  invalidationFailureAction: enforce

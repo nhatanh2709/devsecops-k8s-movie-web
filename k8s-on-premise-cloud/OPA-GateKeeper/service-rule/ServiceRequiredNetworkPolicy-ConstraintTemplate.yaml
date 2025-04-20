@@ -1,0 +1,43 @@
+apiVersion: templates.gatekeeper.sh/v1beta1
+kind: ConstraintTemplate
+metadata:
+  name: servicerequirenetworkpolicy
+spec:
+  crd:
+    spec:
+      names:
+        kind: ServiceRequireNetworkPolicy
+      validation:
+        openAPIV3Schema:
+          type: object
+          properties:
+            message:
+              type: string
+              default: "All Services must have at least one NetworkPolicy that matches one of its pod selector labels"
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package servicerequirenetworkpolicy
+
+        violation[{"msg": msg}] {
+          input.review.object.kind == "Service"
+          input.review.object.spec.selector
+          not has_matching_network_policy(input.review.object.metadata.namespace, input.review.object.spec.selector)
+          msg := sprintf("Service %v/%v must have at least one NetworkPolicy that matches one of its pod selector labels: %v", [
+            input.review.object.metadata.namespace,
+            input.review.object.metadata.name,
+            input.review.object.spec.selector
+          ])
+        }
+
+        has_matching_network_policy(namespace, service_selector) {
+          networkpolicies = data.inventory.namespace[namespace]["networking.k8s.io/v1"]["NetworkPolicy"]
+          networkpolicy = networkpolicies[_]
+          matching_labels(networkpolicy.spec.podSelector.matchLabels, service_selector)
+        }
+
+        matching_labels(matchLabels, selector) {
+          some key
+          trace(sprintf("Checking key: %v with values: matchLabels=%v, selector=%v", [key, matchLabels[key], selector[key]])) 
+          matchLabels[key] == selector[key]
+        }

@@ -49,3 +49,44 @@ aws cloudwatch put-metric-alarm \
   --comparison-operator GreaterThanThreshold \
   --evaluation-periods 1 \
   --alarm-actions arn:aws:sns:ap-southeast-2:145023122173:VPN-Tunnel-Data-In-Alarm-Topic
+
+
+aws cloudwatch put-metric-alarm \
+  --alarm-name "EKS_VPN_Tunnel_Data_Out_High" \
+  --alarm-description "Alarm triggers when TunnelDataOut exceeds 100000 bytes" \
+  --namespace "AWS/VPN" \
+  --metric-name "TunnelDataOut" \
+  --dimensions Name=TunnelIpAddress,Value=13.210.252.199 \
+  --statistic Average \
+  --period 300 \
+  --threshold 100000 \
+  --comparison-operator GreaterThanThreshold \
+  --evaluation-periods 1 \
+  --alarm-actions arn:aws:sns:ap-southeast-2:145023122173:EKS-VPN-Tunnel-Data-Out-Alarm-Topic
+
+aws cloudwatch put-metric-alarm \
+  --alarm-name "EKS_VPN_Tunnel_Data_In_High" \
+  --alarm-description "Alarm triggers when TunnelDataOut exceeds 100000 bytes" \
+   --namespace "AWS/VPN" \
+  --metric-name "TunnelDataIn" \
+  --dimensions Name=TunnelIpAddress,Value=13.210.252.199 \
+  --statistic Average \
+  --period 300 \
+  --threshold 100000 \
+  --comparison-operator GreaterThanThreshold \
+  --evaluation-periods 1 \
+  --alarm-actions arn:aws:sns:ap-southeast-2:145023122173:EKS-VPN-Tunnel-Data-In-Alarm-Topic
+
+
+aws cloudwatch put-metric-alarm \
+  --alarm-name "VPN_Tunnel_Data_In_High" \
+  --alarm-description "Alarm triggers when inbound traffic from Customer Gateway to AWS exceeds 100000 bytes" \
+  --namespace "AWS/VPN" \
+  --metric-name "TunnelDataIn" \
+  --dimensions Name=TunnelIpAddress,Value=171.239.11.33 \
+  --statistic Average \
+  --period 300 \
+  --threshold 100000 \
+  --comparison-operator GreaterThanThreshold \
+  --evaluation-periods 1 \
+  --alarm-actions arn:aws:sns:ap-southeast-2:145023122173:EKS-VPN-Tunnel-Data-In-Alarm-Topic

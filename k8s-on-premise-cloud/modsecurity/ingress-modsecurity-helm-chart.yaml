@@ -65,6 +65,18 @@ controller:
   - mountPath: /etc/nginx/owasp-modsecurity-crs/crs-setup.conf
     name: crs-setup-config
     subPath: crs-setup.conf
+  - mountPath: /etc/nginx/owasp-modsecurity-crs/lfi-os-files.data
+    name: lfi-data-configmap
+    subPath: lfi-os-files.data
+  - mountPath: /etc/nginx/owasp-modsecurity-crs/windows-powershell-commands.data
+    name: windows-powershell-commands-configmap
+    subPath: windows-powershell-commands.data
+  - mountPath: /etc/nginx/owasp-modsecurity-crs/unix-shell.data
+    name: unix-shell-data-configmap
+    subPath: unix-shell.data
+  - mountPath: /etc/nginx/owasp-modsecurity-crs/scanner-user-agents.data
+    name: scanner-user-agents-configmap
+    subPath: scanner-user-agents.data
   extraVolumes:
   - configMap:
       name: modsecurity-config
@@ -72,6 +84,18 @@ controller:
   - configMap:
       name: crs-setup-config
     name: crs-setup-config
+  - configMap:
+      name: lfi-data-configmap
+    name: lfi-data-configmap
+  - configMap:
+      name: windows-powershell-commands-configmap
+    name: windows-powershell-commands-configmap
+  - configMap:
+      name: unix-shell-data-configmap
+    name: unix-shell-data-configmap
+  - configMap: 
+      name: scanner-user-agents-configmap
+    name: scanner-user-agents-configmap
       # Include OWASP Core Rule Set
     
   # -- Annotations to be added to the controller config configuration configmap.
@@ -705,10 +729,6 @@ controller:
 
   # -- Containers, which are run before the app containers are started.
   extraInitContainers: []
-  # - name: init-myservice
-  #   image: busybox
-  #   command: ['sh', '-c', 'until nslookup myservice; do echo waiting for myservice; sleep 2; done;']
-
   # -- Modules, which are mounted into the core nginx image.
   extraModules: []
   # - name: mytestmodule

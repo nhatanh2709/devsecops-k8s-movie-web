@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blocked-host-namespaces-deployment
+  namespace: test 
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: violative-app
+  template:
+    metadata:
+      labels:
+        app: violative-app
+    spec:
+      hostNetwork: true 
+      hostPID: true      
+      hostIPC: true     
+      containers:
+      - name: nginx
+        image: nginx:alpine
+        ports:
+        - containerPort: 80

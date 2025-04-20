@@ -1,0 +1,37 @@
+apiVersion: templates.gatekeeper.sh/v1beta1
+kind: ConstraintTemplate
+metadata:
+  name: k8sallowedregistries
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sAllowedRegistries
+      validation:
+        openAPIV3Schema:
+          properties:
+            registries:
+              type: array
+              items:
+                type: string
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8sallowedregistries
+
+        violation[{"msg": msg}] {
+          container := input.review.object.spec.containers[_]
+          not valid_registry(container.image)
+          msg := sprintf("Container <%v> has invalid image registry <%v>, allowed registries are %v", [container.name, container.image, input.parameters.registries])
+        }
+
+        violation[{"msg": msg}] {
+          container := input.review.object.spec.initContainers[_]
+          not valid_registry(container.image)
+          msg := sprintf("Container <%v> has invalid image registry <%v>, allowed registries are %v", [container.name, container.image, input.parameters.registries])
+        }
+
+        valid_registry(image) {
+          registry := input.parameters.registries[_]
+          startswith(image, registry)
+        }

@@ -1,0 +1,20 @@
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sRestrictedNodePort
+metadata:
+  name: k8s-restricted-node-port
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Service"]
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values: ["movie-web","test"]
+  parameters:
+    message: "NodePort services are not allowed in this namespace"
+    exemptServices:
+      - "k8s-api-gateway"
+      - "movie-web-frontend-service"
+  validationFailureAction: enforce

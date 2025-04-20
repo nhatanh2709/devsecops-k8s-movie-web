@@ -37,7 +37,7 @@ customRules:
       priority: NOTICE
       tags: [maturity_stable, host, container, network, process]
 
-    - rule: Disallowed SSH Connection
+    - rule: Disable SSH Connection
       desc: Detect any new SSH connection on port 22 to a host other than those in an allowed list of hosts.  This rule absolutely requires profiling your environment beforehand. Network-based rules are extremely  crucial in any security program, as they can often provide the only definitive evidence. However,  effectively operationalizing them can be challenging due to the potential for noise.
       condition: inbound_outbound  and ssh_port and not  allowed_ssh_hosts
       output: "Disallowed SSH Connection (connection=%fd.name lport=%fd.lport rport=%fd.rport fd_type=%fd.type fd_proto=fd.l4proto evt_type=%evt.type user=%user.name user_uid=%user.uid user_loginuid=%user.loginuid process=%proc.name proc_exepath=%proc.exepath parent=%proc.pname command=%proc.cmdline terminal=%proc.tty %container.info)"
@@ -116,7 +116,7 @@ customRules:
 
     - rule: Privileged Container Launched
       desc: Detect when a privileged container is launched
-      condition: evt.type=container and container.privileged=true and not falco_privileged_containers and not user_privileged_containers
+      condition: evt.type=container and container.privileged=true 
       output: "Privileged container launched (container=%container.name image=%container.image.repository:%container.image.tag)"
       priority: INFO
       tags: [privileged, container, security]
@@ -157,12 +157,8 @@ customRules:
       priority: INFO
       tags: [maturity_sandbox, container, process, users, mitre_execution]
 
-    - rule: New Container Released
-      desc: Detect when a new container is created and started
-      condition: container_started
-      output: "New container released (container_id=%container.id image=%container.image.repository:%container.image.tag name=%container.name)"
-      priority: INFO
-      tags: [container, monitoring, docker]
+    - macro: ingress_log_format 
+      condition: (jevt.value[/log] contains "stdout F" and jevt.value[/log] contains "GET /api" and jevt.value[/log] contains "HTTP/1.1")
     
     - macro: user_expected_terminal_shell_in_container_conditions
       condition: (never_true)

@@ -1,0 +1,26 @@
+  apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: clean-service-non-endpoints
+    namespace: movie-web
+    labels:
+      app: clean-service-non-endpoints
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: clean-service-non-endpoints
+    template:
+      metadata:
+        labels:
+          app: clean-service-non-endpoints
+      spec: 
+        serviceAccountName: clean-service-non-endpoints
+        containers:
+          - name: kubectl
+            image: bitnami/kubectl
+            ports:
+              - containerPort: 80
+                protocol: TCP  
+                name: http
+            

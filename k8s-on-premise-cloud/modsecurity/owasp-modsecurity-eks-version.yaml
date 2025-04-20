@@ -11,21 +11,21 @@ data:
     SecRule REQUEST_HEADERS:Content-Type "application/json" \
         "id:200001,phase:1,t:none,t:lowercase,pass,nolog,ctl:requestBodyProcessor=JSON,setvar:tx.blocked_rule_id=200001,setenv:blocked_rule_id=200001"
 
-    SecRule REQUEST_HEADERS:X-Country-Code "!@rx ^(VN|AU)$" \
-        "id:100001,\
-        phase:1,\
-        log,\
-        deny,\
-        status:403,\
-        setvar:tx.blocked_rule_id=100001,\
-        setenv:blocked_rule_id=100001,\
-        tag:'security-control',\
-        tag:'geo-restriction',\
-        tag:'PCI/12.1',\
-        tag:'paranoia-level/2',\
-        severity:'WARNING',\
-        ver:'custom-rules/1.0',\
-        msg:\'Blocking non-Vietnamese traffic based on X-Country-Code header\'"
+    # SecRule REQUEST_HEADERS:X-Country-Code "!@rx ^(VN|AU)$" \
+    #     "id:100001,\
+    #     phase:1,\
+    #     log,\
+    #     deny,\
+    #     status:403,\
+    #     setvar:tx.blocked_rule_id=100001,\
+    #     setenv:blocked_rule_id=100001,\
+    #     tag:'security-control',\
+    #     tag:'geo-restriction',\
+    #     tag:'PCI/12.1',\
+    #     tag:'paranoia-level/2',\
+    #     severity:'WARNING',\
+    #     ver:'custom-rules/1.0',\
+    #     msg:\'Blocking non-Vietnamese traffic based on X-Country-Code header\'"
 
     # Block all requests from non Vietname in IPs in header X-Country-Code
     # SecRule REQUEST_HEADERS:X-Country-Code "!@streq VN" "id:100001,log,phase:1,deny,status:403,setvar:tx.blocked_rule_id=100001,setenv:blocked_rule_id=100001"
@@ -52,7 +52,7 @@ data:
         pass,\
         nolog,\
         setvar:ip.rate_counter=+1,\
-        expirevar:ip.rate_counter=15,\
+        expirevar:ip.rate_counter=60,\
         tag:'security-control',\
         tag:'rate-limiting',\
         tag:'paranoia-level/1',\

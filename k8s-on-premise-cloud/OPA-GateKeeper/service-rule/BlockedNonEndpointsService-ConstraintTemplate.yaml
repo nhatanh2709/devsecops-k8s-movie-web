@@ -1,0 +1,39 @@
+apiVersion: templates.gatekeeper.sh/v1beta1
+kind: ConstraintTemplate
+metadata:
+  name: servicenoendpoints
+spec:
+  crd:
+    spec:
+      names:
+        kind: ServiceNoEndpoints
+      validation:
+        openAPIV3Schema:
+          properties:
+            hours:
+              type: integer
+              description: "Maximum allowed hours without endpoints before deletion"
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package servicenoendpoints
+
+        violation[{"msg": msg, "details": {"should_delete": true}}] {
+          # Kiểm tra tại audit time (tất cả services)
+          service := data.inventory.cluster["v1"]["Service"][_]
+          not has_endpoints(service.metadata.namespace, service.metadata.name)
+          creation_time := time.parse_rfc3339_ns(service.metadata.creationTimestamp)
+          current_time := time.now_ns()
+          minutes_diff := (current_time - creation_time) / (1000000000 * 60 )
+          minutes_diff >= input.parameters.minutes
+          msg := sprintf("Service %v/%v has no endpoints for %v hours (creation: %v)", [
+            service.metadata.namespace,
+            service.metadata.name,
+            minutes_diff,
+            service.metadata.creationTimestamp
+          ])
+        }
+
+        has_endpoints(namespace, name) {
+          data.inventory.cluster["v1"]["Endpoints"][namespace][name]
+        }

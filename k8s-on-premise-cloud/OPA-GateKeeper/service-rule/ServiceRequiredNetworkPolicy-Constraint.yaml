@@ -1,0 +1,15 @@
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: ServiceRequireNetworkPolicy
+metadata:
+  name: service-require-network-policy
+spec:
+  match:
+    kinds:
+      - apiGroups: [""] 
+        kinds: ["Service"]
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values: ["test"]
+  validationFailureAction: enforce

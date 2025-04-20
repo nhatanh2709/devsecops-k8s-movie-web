@@ -30,10 +30,12 @@ logstashPipeline:
         port => 5044
       }
     }
-    
+
     filter {
       mutate {
-        add_field => { "[event][ingested]" => "%{@timestamp}" }
+        add_field => {
+          "[event][ingested]" => "%{@timestamp}"
+        }
       }
       
       if [kubernetes] {
@@ -44,43 +46,18 @@ logstashPipeline:
         }
       }
     }
-    
+
     output {
-      if "kubernetes-movie-web" in [tags] {
-        elasticsearch {
-          hosts => "https://elasticsearch-master:9200"
-          cacert => "/usr/share/logstash/config/elasticsearch-master-certs/ca.crt"
-          user => '${ELASTICSEARCH_USERNAME}'
-          password => '${ELASTICSEARCH_PASSWORD}'
-          index => "logs-kubernetes.movie-web-%{+YYYY.MM.dd}"
-          action => "create"
-          data_stream => false
-          template_overwrite => true
-        }
-      } else if "all-containers" in [tags] {
-        elasticsearch {
-          hosts => "https://elasticsearch-master:9200"
-          cacert => "/usr/share/logstash/config/elasticsearch-master-certs/ca.crt"
-          user => '${ELASTICSEARCH_USERNAME}'
-          password => '${ELASTICSEARCH_PASSWORD}'
-          index => "logs-kubernetes.all-%{+YYYY.MM.dd}"
-          action => "create"
-          data_stream => false
-        }
-      } else {
-        # Default output for any logs that don't match the above conditions
-        elasticsearch {
-          hosts => "https://elasticsearch-master:9200"
-          cacert => "/usr/share/logstash/config/elasticsearch-master-certs/ca.crt"
-          user => '${ELASTICSEARCH_USERNAME}'
-          password => '${ELASTICSEARCH_PASSWORD}'
-          index => "logs-kubernetes.other-%{+YYYY.MM.dd}"
-          action => "create"
-          data_stream => false
-        }
+      elasticsearch {
+        hosts => ["https://elasticsearch-master:9200"]
+        cacert => "/usr/share/logstash/config/elasticsearch-master-certs/ca.crt"
+        user => '${ELASTICSEARCH_USERNAME}'
+        password => '${ELASTICSEARCH_PASSWORD}'
+        index => "logs-kubernetes.all-%{+YYYY.MM.dd}"
+        action => "create"
+        data_stream => false
       }
     }
-
 
 # Allows you to add any pattern files in your custom pattern dir
 logstashPatternDir: "/usr/share/logstash/patterns/"

@@ -1,0 +1,23 @@
+config:
+  inputs: |
+    [INPUT]
+        Name              tail
+        Alias             nginx_ingress_logs
+        Tag               nginx_ingress
+        Path              /var/log/containers/*ingress-nginx*.log
+        Parser            docker
+        DB                /var/log/nginx_ingress_logs.db
+        Mem_Buf_Limit     128MB
+        Skip_Long_Lines   On
+        Refresh_Interval  10
+        Buffer_Chunk_Size 512k
+        Buffer_Max_Size   5m
+  outputs: |
+    [OUTPUT]
+        Name            http
+        Alias           nginx_ingress_to_falco
+        Match           nginx_ingress
+        Host            falco.falco
+        Port            8765
+        URI             /k8s-ingress-logs
+        Format          json

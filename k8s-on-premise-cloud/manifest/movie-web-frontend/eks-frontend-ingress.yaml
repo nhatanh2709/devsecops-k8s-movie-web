@@ -1,7 +1,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: movie-web-frontend-ingress
+  name: movie-web-eks-frontend-ingress
   namespace: movie-web
   annotations:
     nginx.ingress.kubernetes.io/use-forwarded-headers: "true"
@@ -12,15 +12,14 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-body-size: "20m"
     nginx.ingress.kubernetes.io/preserve-host: "true"
     nginx.ingress.kubernetes.io/modsecurity-snippet: |
-      
       Include /etc/nginx/modsecurity/modsecurity.conf
       Include /etc/nginx/owasp-modsecurity-crs/crs-setup.conf
       SecAuditEngine RelevantOnly
       SecAuditLogParts ABCDEFGHIZ
       SecAuditLogType Serial
-      SecDebugLogLevel 3
+      SecDebugLogLevel 3 
     nginx.ingress.kubernetes.io/server-snippet: |
-      error_page 403 = @403;
+      error_page 403 = @403; 
       location @403 {
         default_type application/json;
         
@@ -119,7 +118,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: movie.nhatanhweb.website
+    - host: eks-movie.nhatanhweb.website
       http:
         paths:
           - path: /

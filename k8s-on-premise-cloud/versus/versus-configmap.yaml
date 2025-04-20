@@ -13,7 +13,7 @@ data:
       debug_body: true
       slack: 
         enable: true
-        token: xoxb-8557515431654-8572612301155-j57RSwXUZi82M8Hkr2DEutTc
+        token: xoxb-8557515431654-8572612301155-31WRytYEQVwkD5rPumrbT05A
         channel_id: C08GX6DK4L9
         template_path: "/app/config/slack_message.tmpl"
       

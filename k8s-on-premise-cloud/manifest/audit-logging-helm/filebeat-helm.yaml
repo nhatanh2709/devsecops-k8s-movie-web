@@ -38,20 +38,6 @@ daemonset:
       filebeat.inputs:
       - type: container
         paths:
-          - /var/log/containers/api-gateway*.log
-          - /var/log/containers/bill-service*.log
-          - /var/log/containers/movie-service*.log
-          - /var/log/containers/user-service*.log
-          - /var/log/containers/movie-web-frontend*.log
-        tags: ["kubernetes-movie-web"]
-        processors:
-        - add_kubernetes_metadata:
-            host: ${NODE_NAME}
-            matchers:
-            - logs_path:
-                logs_path: "/var/log/containers/"
-      - type: container
-        paths:
           - /var/log/containers/*.log
         tags: ["all-containers"]
         processors:
@@ -60,8 +46,8 @@ daemonset:
             matchers:
             - logs_path:
                 logs_path: "/var/log/containers/"
-        
-
+      - type: container 
+      
       output.logstash:
         hosts: ["logstash-logstash:5044"]
   # Only used when updateStrategy is set to "RollingUpdate"

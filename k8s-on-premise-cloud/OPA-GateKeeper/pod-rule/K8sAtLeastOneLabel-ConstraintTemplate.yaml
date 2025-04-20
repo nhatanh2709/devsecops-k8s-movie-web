@@ -1,0 +1,27 @@
+apiVersion: templates.gatekeeper.sh/v1beta1
+kind: ConstraintTemplate
+metadata:
+  name: k8satleastonelabel
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sAtLeastOneLabel
+      validation:
+        openAPIV3Schema:
+          properties:
+            labels:
+              type: array
+              items:
+                type: string
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8satleastonelabel
+        violation[{"msg": msg}] {
+          input.review.object.kind == "Pod"
+          provided := {label | input.review.object.metadata.labels[label]}
+          required := {label | label := input.parameters.labels[_]}
+          count(provided & required) == 0
+          msg := sprintf("Pod must have at least one of these labels: %v", [input.parameters.labels])
+        }

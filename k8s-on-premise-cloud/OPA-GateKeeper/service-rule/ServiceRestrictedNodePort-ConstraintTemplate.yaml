@@ -1,0 +1,34 @@
+apiVersion: templates.gatekeeper.sh/v1beta1
+kind: ConstraintTemplate
+metadata:
+  name: k8srestrictednodeport
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sRestrictedNodePort
+      validation:
+        openAPIV3Schema:
+          type: object
+          properties:
+            exemptServices:
+              type: array
+              items:
+                type: string
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8srestrictednodeport
+
+        violation[{"msg": msg}] {
+          input.review.kind.kind == "Service"
+          input.review.object.spec.type == "NodePort"
+          service_name := input.review.object.metadata.name
+          not exempt_service(service_name)
+          msg := sprintf("Service %v is not allowed to use NodePort type", [service_name])
+        }
+
+        exempt_service(service_name) {
+          exempt_services := input.parameters.exemptServices
+          exempt_services[_] == service_name
+        }

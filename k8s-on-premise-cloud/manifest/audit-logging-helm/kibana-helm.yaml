@@ -53,9 +53,7 @@ resources:
   requests:
     cpu: "500m"
     memory: "512Mi"
-  limits:
-    cpu: "1000m"
-    memory: "2Gi"
+  limits: {}
 
 protocol: http
 
@@ -65,7 +63,11 @@ healthCheckPath: "/app/kibana"
 
 # Allows you to add any config files in /usr/share/kibana/config/
 # such as kibana.yml
-kibanaConfig: {}
+kibanaConfig: 
+  kibana.yml: |
+    xpack.encryptedSavedObjects.encryptionKey: "kqqjo/WRladCWast9PX4yKTcnP9tngV1"
+    xpack.reporting.encryptionKey: "kqqjo/WRladCWast9PX4yKTcnP9tngV1"
+    xpack.security.encryptionKey: "kqqjo/WRladCWast9PX4yKTcnP9tngV1"
 #   kibana.yml: |
 #     key:
 #       nestedkey: value

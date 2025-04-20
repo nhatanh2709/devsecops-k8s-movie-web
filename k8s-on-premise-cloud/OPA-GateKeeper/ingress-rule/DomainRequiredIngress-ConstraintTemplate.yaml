@@ -1,0 +1,36 @@
+apiVersion: templates.gatekeeper.sh/v1beta1
+kind: ConstraintTemplate
+metadata:
+  name: k8sdomainrequiredingress
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sDomainRequiredIngress
+      validation:
+        openAPIV3Schema:
+          properties:
+            domains:
+              type: array
+              items:
+                type: string
+            requireTLS:
+              type: boolean
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8sdomainrequiredingress
+
+        violation[{"msg": msg}] {
+          input.review.object.kind == "Ingress"
+          host := input.review.object.spec.rules[_].host
+          not valid_domain(host)
+          msg := sprintf("Ingress host %v is not in allowed domains list", [host])
+        }
+
+        valid_domain(host) {
+          allowed_domains := input.parameters.domains
+          count(allowed_domains) > 0
+          list_allowed_domains := allowed_domains[_]
+          endswith(host, list_allowed_domains)
+        }
