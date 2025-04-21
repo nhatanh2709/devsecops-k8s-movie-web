@@ -58,6 +58,12 @@ controller:
     enable-modsecurity: "true"
     enable-owasp-modsecurity-crs: "false"
     annotations-risk-level: Critical
+    error-log-level: "info"
+    http-snippet: |
+      log_format modsec '$remote_addr - $remote_user [$time_local] '
+                      '"$request" $status $body_bytes_sent '
+                      '"$http_referer" "$http_user_agent" ';
+      access_log /dev/stdout modsec;
   extraVolumeMounts:
   - mountPath: /etc/nginx/modsecurity/modsecurity.conf
     name: modsecurity-config
