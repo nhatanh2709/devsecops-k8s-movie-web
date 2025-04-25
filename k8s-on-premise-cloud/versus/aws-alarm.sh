@@ -25,30 +25,31 @@ aws cloudwatch put-metric-alarm \
   --alarm-actions arn:aws:sns:ap-southeast-2:145023122173:Gitlab-Runner-EC2-CPU-Alarm-Topic
 
 aws cloudwatch put-metric-alarm \
-  --alarm-name "VPN_Tunnel_Data_Out_High" \
-  --alarm-description "Alarm triggers when TunnelDataOut exceeds 4000 bytes" \
-  --namespace "AWS/VPN" \
-  --metric-name "TunnelDataOut" \
-  --dimensions Name=TunnelIpAddress,Value=13.236.133.77 \
-  --statistic Average \
-  --period 300 \
-  --threshold 4000 \
-  --comparison-operator GreaterThanThreshold \
-  --evaluation-periods 1 \
-  --alarm-actions arn:aws:sns:ap-southeast-2:145023122173:VPN-Tunnel-Data-Out-Alarm-Topic
-
-aws cloudwatch put-metric-alarm \
-  --alarm-name "VPN_Tunnel_Data_In_High" \
+  --alarm-name "Local_VPN_Tunnel_Data_Out_High" \
   --alarm-description "Alarm triggers when TunnelDataOut exceeds 100000 bytes" \
   --namespace "AWS/VPN" \
   --metric-name "TunnelDataOut" \
-  --dimensions Name=TunnelIpAddress,Value=54.153.170.133 \
+  --dimensions Name=TunnelIpAddress,Value=54.66.187.235 \
   --statistic Average \
   --period 300 \
   --threshold 100000 \
   --comparison-operator GreaterThanThreshold \
   --evaluation-periods 1 \
-  --alarm-actions arn:aws:sns:ap-southeast-2:145023122173:VPN-Tunnel-Data-In-Alarm-Topic
+  --alarm-actions arn:aws:sns:ap-southeast-2:145023122173:Local-VPN-Tunnel-Data-Out-Alarm-Topic
+
+aws cloudwatch put-metric-alarm \
+  --alarm-name "Local_VPN_Tunnel_Data_In_High" \
+  --alarm-description "Alarm triggers when TunnelDataOut exceeds 100000 bytes" \
+   --namespace "AWS/VPN" \
+  --metric-name "TunnelDataIn" \
+  --dimensions Name=TunnelIpAddress,Value=54.66.187.235 \
+  --statistic Average \
+  --period 300 \
+  --threshold 100000 \
+  --comparison-operator GreaterThanThreshold \
+  --evaluation-periods 1 \
+  --alarm-actions arn:aws:sns:ap-southeast-2:145023122173:Local-VPN-Tunnel-Data-In-Alarm-Topic
+
 
 
 aws cloudwatch put-metric-alarm \

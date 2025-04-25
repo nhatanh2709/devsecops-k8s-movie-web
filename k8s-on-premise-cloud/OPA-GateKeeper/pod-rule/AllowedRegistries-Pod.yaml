@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: allowed-registries-deployment
-  namespace: movie-web
+  name: dis-allowed-registries-deployment
+  namespace: test
   labels:
-    app: allowed-registries
+    app: dis-allowed-registries
 spec:
   replicas: 1
   revisionHistoryLimit: 5
   selector:
     matchLabels:
-      app: allowed-registries
+      app: dis-allowed-registries
   strategy:
     rollingUpdate:
       maxSurge: 25%
@@ -19,11 +19,11 @@ spec:
   template:
     metadata:
       labels:
-        app: allowed-registries
+        app: dis-allowed-registries
     spec:
       containers:
-        - name: allowed-registries
-          image: nginx:latest
+        - name: dis-allowed-registries
+          image: ubuntu:22.04
           ports:
             - containerPort: 3002
               protocol: TCP  
@@ -31,8 +31,6 @@ spec:
           resources:
             requests:
               memory: "256Mi"
-      imagePullSecrets:
-        - name: auth-registry
       dnsPolicy: ClusterFirst
       restartPolicy: Always
 

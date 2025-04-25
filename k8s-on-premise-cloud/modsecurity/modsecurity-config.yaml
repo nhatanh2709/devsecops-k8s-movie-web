@@ -8,8 +8,8 @@ data:
     SecRuleEngine On                
     SecRequestBodyAccess On         
     SecResponseBodyAccess On        
-    SecAuditLog /dev/stdout
-    SecDebugLog /dev/stderr 
+    SecAuditLog /var/log/modsecurity_audit.log
+    SecDebugLog /var/log/modsecurity_debug.log
     SecDefaultAction "phase:1,deny,log,status:403"
     SecDefaultAction "phase:2,deny,log,status:403"
     SecAuditLogFormat JSON

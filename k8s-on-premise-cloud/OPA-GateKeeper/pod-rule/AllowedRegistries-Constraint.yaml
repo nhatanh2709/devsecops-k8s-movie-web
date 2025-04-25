@@ -16,7 +16,7 @@ spec:
           values: ["movie-web", "test"]
   parameters:
     registries:
-      - "registry.example.com/"
+      - "nginx"
       - "docker.io/"
       - "dev.nhatanhdevops.website/onlineshop"
   validationFailureAction: enforce

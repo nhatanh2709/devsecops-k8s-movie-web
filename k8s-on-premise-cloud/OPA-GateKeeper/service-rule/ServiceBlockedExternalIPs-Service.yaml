@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: bkocked-external-ips-service
+  name: blocked-external-ips-service
   namespace: movie-web
 spec:
   internalTrafficPolicy: Cluster
@@ -11,7 +11,7 @@ spec:
   selector:
     app: user-service
   externalIPs:
-    - 171.239.11.33
+    - 171.239.11.44
   ports:
     - port: 80
       targetPort: 80

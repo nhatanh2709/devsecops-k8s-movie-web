@@ -39,15 +39,14 @@ daemonset:
       - type: container
         paths:
           - /var/log/containers/*.log
-        tags: ["all-containers"]
+        tags: ["ingress-nginx-controller"]
         processors:
         - add_kubernetes_metadata:
             host: ${NODE_NAME}
             matchers:
             - logs_path:
                 logs_path: "/var/log/containers/"
-      - type: container 
-      
+    
       output.logstash:
         hosts: ["logstash-logstash:5044"]
   # Only used when updateStrategy is set to "RollingUpdate"

@@ -1,0 +1,22 @@
+apiVersion: security.kubearmor.com/v1
+kind: KubeArmorPolicy
+metadata:
+  name: block-create-account-create-local-account
+  namespace: test
+spec:
+  selector:
+    matchLabels:
+      app: nginx
+  message: "Notification! User and password added/modified"
+  file:
+    severity: 3
+    matchPaths:
+    - path: /etc/passwd
+    - path: /etc/shadow
+    action: Audit
+  process:
+    severity: 3
+    matchPaths:
+    - path: /bin/useradd
+    - path: /bin/adduser
+    action: Audit
