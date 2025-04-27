@@ -5,7 +5,7 @@ metadata:
 spec:
   message: "Alert! Access to Controller Manager files has been blocked" 
   nodeSelector:
-    matchExpressions:
+    matchLabels:
       kubernetes.io/hostname: k8s-master
   file:
     severity: 5

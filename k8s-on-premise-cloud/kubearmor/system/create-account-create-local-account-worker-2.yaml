@@ -1,0 +1,21 @@
+apiVersion: security.kubearmor.com/v1
+kind: KubeArmorHostPolicy
+metadata:
+  name: alert-create-account-create-local-account-worker-2
+spec:
+  nodeSelector: 
+    matchLabels:
+      kubernetes.io/hostname: k8s-worker-2
+  message: "Notification! User and password added/modified"
+  file:
+    severity: 5
+    matchPaths:
+    - path: /etc/passwd
+    - path: /etc/shadow
+    action: Block
+  process:
+    severity: 5
+    matchPaths:
+    - path: /bin/useradd
+    - path: /bin/adduser
+    action: Audit

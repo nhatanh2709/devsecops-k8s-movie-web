@@ -1,0 +1,6 @@
+cat /boot/config-$(uname -r) | grep -e "CONFIG_BPF=y"
+cat /boot/config-$(uname -r) | grep -e "CONFIG_BPF_SYSCALL=y"
+cat /boot/config-$(uname -r) | grep -e "CONFIG_BPF_JIT=y"
+cat /boot/config-$(uname -r) | grep -e "CONFIG_BPF_LSM=y"
+cat /boot/config-$(uname -r) | grep -e "CONFIG_DEBUG_INFO=y"
+cat /boot/config-$(uname -r) | grep -e "CONFIG_DEBUG_INFO_BTF=y"

@@ -41,10 +41,10 @@ kubearmorOperator:
   args: []
   # https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
   tolerations: ""
-  # tolerations:
-  #   - key: "node-role.kubernetes.io/control-plane"
-  #     operator: "Exists"
-  #     effect: "NoSchedule"
+  tolerations:
+    - key: "node-role.kubernetes.io/control-plane"
+      operator: "Exists"
+      effect: "NoSchedule"
   # Optional, but if there are a lot of image pulls required, Docker might be rate-limited. So, it's good to add pull secrets for production.
   imagePullSecrets: ""
   resources: {}
@@ -57,10 +57,10 @@ kubearmorConfig:
   defaultCapabilitiesPosture: audit
   defaultFilePosture: audit
   defaultNetworkPosture: audit
-  defaultVisibility: process,network
-  enableStdOutLogs: false
-  enableStdOutAlerts: false
-  enableStdOutMsgs: false
+  defaultVisibility: process,network,file
+  enableStdOutLogs: true
+  enableStdOutAlerts: true
+  enableStdOutMsgs: true
   seccompEnabled: true
   alertThrottling: true
   maxAlertPerSec: 10

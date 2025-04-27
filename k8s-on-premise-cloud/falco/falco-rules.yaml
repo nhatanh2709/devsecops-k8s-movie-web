@@ -21,6 +21,20 @@ customRules:
       priority: ERROR
       tags: [maturity_incubating, host, container, filesystem]
 
+    - rule: Read Passwd information
+      desc: Enable this rule to block the actions to read or using the Passwd configuration
+      condition: (open_read or open_directory) and (fd.name startswith /etc/passwd) 
+      output: "Passwd file/directory read  (file=%fd.name pcmdline=%proc.pcmdline evt_type=%evt.type user=%user.name user_uid=%user.uid user_loginuid=%user.loginuid process=%proc.name proc_exepath=%proc.exepath parent=%proc.pname command=%proc.cmdline terminal=%proc.tty %container.info)"
+      priority: WARNING
+      tags: [maturity_incubating, host, container, filesystem]
+
+    - rule: Read Kubernetes Configuration Information
+      desc: Enable this rule to block actions to read kubernetes configuration
+      condition: (open_read or open_directory) and (fd.name startswith /etc/kubernetes) 
+      output: "Kubernetes configuration read  (file=%fd.name pcmdline=%proc.pcmdline evt_type=%evt.type user=%user.name user_uid=%user.uid user_loginuid=%user.loginuid process=%proc.name proc_exepath=%proc.exepath parent=%proc.pname command=%proc.cmdline terminal=%proc.tty %container.info)"
+      priority: WARNING
+      tags: [maturity_incubating, host, container, filesystem, kubernetes]
+
     - rule: Search Private Keys or Passwords
       desc: Detect attempts to search for private keys or passwords using the grep or find command
       condition: spawned_process  and ((grep_commands and private_key_or_password) or (proc.name = "find" and (proc.args contains "id_rsa" or proc.args contains "id_dsa" or proc.args contains "id_ed25519" or proc.args contains "id_ecdsa")))

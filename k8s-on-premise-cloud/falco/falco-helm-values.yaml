@@ -26,7 +26,7 @@ falcosidekick:
         size: 2Gi
   config:
     slack:
-      webhookurl: "https://hooks.slack.com/services/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"
+      webhookurl: "https://hooks.slack.com/services/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"
       channel: "devops"
       footer: "https://github.com/falcosecurity/falcosidekick"
       username: "nhatanh2709"

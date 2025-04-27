@@ -240,7 +240,7 @@ readinessProbe:
   timeoutSeconds: 5
 
 # https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-health.html#request-params wait_for_status
-clusterHealthCheckParams: "wait_for_status=yellow&timeout=20s"
+clusterHealthCheckParams: "wait_for_status=green&timeout=1s"
 
 ## Use an alternate scheduler.
 ## ref: https://kubernetes.io/docs/tasks/administer-cluster/configure-multiple-schedulers/
@@ -261,12 +261,11 @@ ingress:
     nginx.ingress.kubernetes.io/ssl-passthrough: "true"
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
   className: "nginx"
-  pathtype: Prefix
+  pathtype: ImplementationSpecific
   hosts:
     - host: elastic.nhatanhmovie.website 
       paths:
         - path: /
-          pathType: Prefix
   tls: []
   #  - secretName: chart-example-tls
   #    hosts:
