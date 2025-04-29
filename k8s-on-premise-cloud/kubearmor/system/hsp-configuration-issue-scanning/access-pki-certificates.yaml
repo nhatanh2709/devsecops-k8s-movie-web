@@ -1,0 +1,37 @@
+apiVersion: security.kubearmor.com/v1
+kind: KubeArmorHostPolicy
+metadata:
+  name: access-pki-certificates-blocked
+spec:
+  message: "Alert! Access to PKI certificates has been blocked"
+  nodeSelector:
+    matchLabels:
+      kubernetes.io/hostname: k8s-master
+  file:
+    severity: 5
+    matchPaths:
+    - path: /etc/kubernetes/pki/ca.crt
+      readOnly: true
+      ownerOnly: true
+    - path: /etc/kubernetes/etcd/ca.crt
+      readOnly: true
+      ownerOnly: true
+    - path: /etc/kubernetes/pki/front-proxy-ca.crt
+      readOnly: true
+      ownerOnly: true
+    - path: /etc/kubernetes/pki/apiserver.key
+      readOnly: true
+      ownerOnly: true
+    - path: /etc/kubernetes/pki/apiserver-kubelet-client.crt
+      readOnly: true
+      ownerOnly: true
+    - path: /etc/kubernetes/pki/etcd/peer.crt
+      readOnly: true
+      ownerOnly: true
+    - path: /etc/kubernetes/pki/etcd/server.crt
+      readOnly: true
+      ownerOnly: true
+    - path: /etc/kubernetes/pki/etcd/healthcheck-client.crt
+      readOnly: true
+      ownerOnly: true
+  action: Block

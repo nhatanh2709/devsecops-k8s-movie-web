@@ -1,0 +1,19 @@
+apiVersion: security.kubearmor.com/v1
+kind: KubeArmorClusterPolicy
+metadata:
+  name: kubernetes-cluster-audit-apt-proccess
+spec:
+  message: "Alert! unauthorized apt process in kubernetes namespace test"
+  serverity: 8
+  selector:
+    matchExpressions:
+      - key: namespace
+        operator: In
+        values:
+          - test
+  proccess:
+    matchPaths:
+      - path: /usr/bin/apt-get
+      - path: /usr/bin/apt
+  action: 
+    Audit

@@ -1,0 +1,19 @@
+apiVersion: security.kubearmor.com/v1
+kind: KubeArmorPolicy
+metadata:
+  name: nginx-audit-logs-configuration-blocked
+  namespace: test
+spec:
+  message: " Alert! unauthorized modification in home directory "
+  tags: 
+  - NOTICE
+  selector:
+    matchLabels:
+      app: nginx
+  file:
+    severity: 4
+    matchDirectories:
+    - dir: /var/log/nginx/
+      ownerOnly: true
+      recursive: true
+    action: Audit

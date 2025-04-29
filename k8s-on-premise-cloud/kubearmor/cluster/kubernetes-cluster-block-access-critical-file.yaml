@@ -1,0 +1,20 @@
+apiVersion: security.kubearmor.com/v1
+kind: KubeArmorClusterPolicy
+metadata:
+  name: kubernetes-cluster-block-access-critical-file
+spec:
+  message: "Alert! Block access to critical file in kubernetes namespace test"
+  severity: 8
+  selector:
+    matchExpressions:
+      - key: namespace
+        operator: In
+        values:
+          - test
+  file:
+    matchPaths:
+      - path: /etc/host.conf
+        fromSource:
+        - path: /usr/bin/cat
+  action:
+    Block

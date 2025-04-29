@@ -21,17 +21,38 @@ customRules:
       priority: ERROR
       tags: [maturity_incubating, host, container, filesystem]
 
-    - rule: Read Passwd information
-      desc: Enable this rule to block the actions to read or using the Passwd configuration
-      condition: (open_read or open_directory) and (fd.name startswith /etc/passwd) 
-      output: "Passwd file/directory read  (file=%fd.name pcmdline=%proc.pcmdline evt_type=%evt.type user=%user.name user_uid=%user.uid user_loginuid=%user.loginuid process=%proc.name proc_exepath=%proc.exepath parent=%proc.pname command=%proc.cmdline terminal=%proc.tty %container.info)"
-      priority: WARNING
-      tags: [maturity_incubating, host, container, filesystem]
+    # - rule: Read Passwd information
+    #   desc: Enable this rule to block the actions to read or using the Passwd configuration
+    #   condition: (open_read or open_directory) and (fd.name startswith /etc/passwd) 
+    #   output: "Passwd file/directory read  (file=%fd.name pcmdline=%proc.pcmdline evt_type=%evt.type user=%user.name user_uid=%user.uid user_loginuid=%user.loginuid process=%proc.name proc_exepath=%proc.exepath parent=%proc.pname command=%proc.cmdline terminal=%proc.tty %container.info)"
+    #   priority: WARNING
+    #   tags: [maturity_incubating, host, container, filesystem]
 
-    - rule: Read Kubernetes Configuration Information
+    - rule: Access Kubernetes Controller Manager Configuration
       desc: Enable this rule to block actions to read kubernetes configuration
-      condition: (open_read or open_directory) and (fd.name startswith /etc/kubernetes) 
-      output: "Kubernetes configuration read  (file=%fd.name pcmdline=%proc.pcmdline evt_type=%evt.type user=%user.name user_uid=%user.uid user_loginuid=%user.loginuid process=%proc.name proc_exepath=%proc.exepath parent=%proc.pname command=%proc.cmdline terminal=%proc.tty %container.info)"
+      condition: (open_read or open_directory) and access_kubernetes_controller_configuration
+      output: "Kubernetes configuration read (file=%fd.name pcmdline=%proc.pcmdline evt_type=%evt.type user=%user.name user_uid=%user.uid user_loginuid=%user.loginuid process=%proc.name proc_exepath=%proc.exepath parent=%proc.pname command=%proc.cmdline terminal=%proc.tty %container.info)"
+      priority: WARNING
+      tags: [maturity_incubating, host, container, filesystem, kubernetes]
+    
+    - rule: Acccess Kubernetes PKI Certificates Configuration
+      desc: Enable this rule to block actuons to read Kubernetes PKI Certificates Configuration
+      condition:  access_kubernetes_pki_certificates_configuration
+      output: "Kubernetes PKI certificates configuration access  (file=%fd.name pcmdline=%proc.pcmdline evt_type=%evt.type user=%user.name user_uid=%user.uid user_loginuid=%user.loginuid process=%proc.name proc_exepath=%proc.exepath parent=%proc.pname command=%proc.cmdline terminal=%proc.tty %container.info)"
+      priority: WARNING
+      tags: [maturity_incubating, host, container, filesystem, kubernetes]
+
+    - rule: Read Network Interface Cluster Configuration
+      desc: Enable this rule to block the actions to read Network Interface Cluster Configuration
+      condition: (open_read or open_directory) and check_network_config_path
+      output: "Network interface configuration read (file=%fd.name pcmdline=%proc.pcmdline evt_type=%evt.type user=%user.name user_uid=%user.uid user_loginuid=%user.loginuid process=%proc.name proc_exepath=%proc.exepath parent=%proc.pname command=%proc.cmdline terminal=%proc.tty %container.info)"
+      priority: WARNING
+      tags: [maturity_incubating, host, container, filesystem, kubernetes, network]
+
+    - rule: Read Kubernetes Admin Configuration
+      desc: Enable this rule to block the actions to read Kuberetes Admin Config Configuration
+      condition: (open_read or open_directory) and (fd.name startswith /etc/kubernetes/admin.conf)
+      output: "Kubernetes admin configuration read  (file=%fd.name pcmdline=%proc.pcmdline evt_type=%evt.type user=%user.name user_uid=%user.uid user_loginuid=%user.loginuid process=%proc.name proc_exepath=%proc.exepath parent=%proc.pname command=%proc.cmdline terminal=%proc.tty %container.info)"
       priority: WARNING
       tags: [maturity_incubating, host, container, filesystem, kubernetes]
 
@@ -95,6 +116,15 @@ customRules:
     - macro: private_aws_credentials
       condition: (proc.args icontains "aws_access_key_id" or proc.args icontains "aws_secret_access_key" or proc.args icontains "aws_session_token" or proc.args icontains "accesskeyid" or proc.args icontains "secretaccesskey")
     
+    - macro: check_network_config_path
+      condition: (fd.name startswith /etc/netconfig) or (fd.name startswith /etc/networks) or (fd.name startswith /etc/cni) or (fd.name startswith /etc/NetworkManager) or (fd.name startswith /etc/netplan) or (fd.name startswith /etc/network) or (fd.name startswith /etc/network-dispatcher)
+
+    - macro: access_kubernetes_controller_configuration
+      condition: (fd.name startswith /etc/secrets) or (fd.name=/etc/kubernetes/controller-manager.conf) or (fd.name=/etc/kubernetes/audit/audit-policy.yaml) or (fd.name=/etc/kubernetes/scheduler.conf)
+
+    - macro: access_kubernetes_pki_certificates_configuration  
+      condition: (fd.name startswith "/etc/kubernetes/pki/" or fd.name startswith "/etc/kubernetes/etcd/") and (fd.name endswith "ca.crt" or fd.name endswith "apiserver.key" or fd.name endswith "apiserver-kubelet-client.crt" or fd.name endswith "peer.crt" or fd.name endswith "server.crt" or fd.name endswith "healthcheck-client.crt") and (evt.type in (open,openat,openat2,read,readv,pread,preadv,execve,execveat))   
+
     - list: forbidden_process
       items: [mount, sudo, su, rm]
 
@@ -119,11 +149,14 @@ customRules:
     - list: grep_binaries
       items: [grep, egrep, fgrep]
 
+    - list: network_interfaces_configuration_block
+      items: ["/etc/netconfig", "/etc/networks", "/etc/cni", "/etc/NetworkManager", "/etc/netplan", "/etc/network", "/etc/network-dispatcher"]
+
   rules-containers.yaml: |-
     - rule: Terminal Shell in container
       desc: A shell was used as the entrypoint/exec point into a container with an attached terminal. Parent process may have  legitimately already exited and be null (read container_entrypoint macro). Common when using "kubectl exec" in Kubernetes.  Correlate with k8saudit exec logs if possible to find user or serviceaccount token used (fuzzy correlation by namespace and pod name).  Rather than considering it a standalone rule, it may be best used as generic auditing rule while examining other triggered  rules in this container/tty.
       condition: spawned_process  and container and shell_procs  and proc.tty != 0 and container_entrypoint and not user_expected_terminal_shell_in_container_conditions
-      output: A shell was spawned in a container with an attached terminal (evt_type=%evt.type user=%user.name user_uid=%user.uid user_loginuid=%user.loginuid process=%proc.name proc_exepath=%proc.exepath parent=%proc.pname command=%proc.cmdline terminal=%proc.tty exe_flags=%evt.arg.flags %container.info)
+      output: A shell was spawned in a container with an attached terminal (evt_type=%evt.type user=%user.name user_uid=%user.uid ufser_loginuid=%user.loginuid process=%proc.name proc_exepath=%proc.exepath parent=%proc.pname command=%proc.cmdline terminal=%proc.tty exe_flags=%evt.arg.flags %container.info)
       priority: NOTICE
       tags: [maturity_stable, container, process, mitre_execution]
 
@@ -170,6 +203,13 @@ customRules:
       output: "Container launched with root user privilege (evt_type=%evt.type user=%user.name user_uid=%user.uid user_loginuid=%user.loginuid process=%proc.name proc_exepath=%proc.exepath parent=%proc.pname command=%proc.cmdline terminal=%proc.tty exe_flags=%evt.arg.flags %container.info)"
       priority: INFO
       tags: [maturity_sandbox, container, process, users, mitre_execution]
+    
+    - rule: New Conatainer Release
+      desc: Detect new container release
+      condition: container_started and container
+      output: "New container release (container=%container.name image=%container.image.repository:%container.image.tag)"
+      priority: INFO
+      tags: [maturity_stable, container, process, kubernetes, container_release]
 
     - macro: ingress_log_format 
       condition: (jevt.value[/log] contains "stdout F" and jevt.value[/log] contains "GET /api" and jevt.value[/log] contains "HTTP/1.1")

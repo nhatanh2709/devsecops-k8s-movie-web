@@ -1,0 +1,17 @@
+apiVersion: security.kubearmor.com/v1
+kind: KubeArmorPolicy
+metadata:
+  name: container-block-icmp-protocol
+  namespace: test
+spec:
+  message: "Alert! Block ICMP protocal in container configuration"
+  selector:
+    matchLabels:
+      app: nginx
+      app: ubuntu
+  severity: 4
+  network:
+    matchProtocols:
+    - protocol: icmp
+  action: 
+    Block

@@ -3,24 +3,24 @@ kind: KubeArmorHostPolicy
 metadata:
   name: controller-manager-access-file-blocked
 spec:
-  message: "Alert! Access to Controller Manager files has been blocked" 
   nodeSelector:
     matchLabels:
-      kubernetes.io/hostname: k8s-master
+      kubernetes.io/cluster-name: kubernetes-cluster
+  message: "Alert! Access to Controller Manager files has been blocked" 
   file:
     severity: 5
     matchPaths:
     - path: /etc/kubernetes/controller-manager.conf
       readOnly: false
       ownerOnly: true
+    - path: /etc/kubernetes/scheduler.conf
+      readOnly: false
+      ownerOnly: true
+    - path: /etc/kubernetes/audit/audit-policy.yaml
+      readOnly: false
+      ownerOnly: true
     matchDirectories:
-    - dir: /etc/kubernetes/manifests/
-      readOnly: false
-      ownerOnly: true
     - dir: /etc/kubernetes/secrets/
-      readOnly: false
-      ownerOnly: true
-    - dir: /etc/kubernetes/pki/
       readOnly: false
       ownerOnly: true
     action: Block

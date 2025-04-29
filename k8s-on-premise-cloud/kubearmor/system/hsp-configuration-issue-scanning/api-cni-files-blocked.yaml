@@ -1,0 +1,40 @@
+apiVersion: security.kubearmor.com/v1
+kind: KubeArmorHostPolicy
+metadata:
+  name: api-cni-files-blocked
+spec:
+  message: "Alert! Access to Network Interface Cluster files has been denied"
+  nodeSelector:
+    matchLabels:
+      kubernetes.io/cluster-name: kubernetes-cluster
+  file:
+    severity: 5
+    matchPaths:
+    - path: /etc/netconfig
+      readOnly: false
+      ownerOnly: true
+    - path: /etc/networks
+      readOnly: false
+      ownerOnly: true
+    matchDirectories:
+    - dir: /etc/cni/
+      recursive: true
+      readOnly: false
+      ownerOnly: true
+    - dir: /etc/NetworkManager/
+      recursive: true
+      readOnly: false
+      ownerOnly: true
+    - dir: /etc/netplan/
+      recursive: true
+      readOnly: false
+      ownerOnly: true
+    - dir: /etc/network/
+      recursive: true
+      readOnly: false
+      ownerOnly: true
+    - dir: /etc/networkd-dispatcher/
+      recursive: true
+      readOnly: false
+      ownerOnly: true
+    action: Block

@@ -1,0 +1,16 @@
+apiVersion: security.kubearmor.com/v1
+kind: KubeArmorHostPolicy
+metadata:
+  name: kubernetes-admin-config-blocked
+spec:
+  message: "Alert! Access to kubernetes admin config has been denied"
+  nodeSelector:
+    matchLabels:
+      kubernetes.io/hostname: k8s-master
+  file:
+    severity: 5
+    matchPaths:
+    - path: /etc/kubernetes/admin.conf
+      readOnly: true
+      ownerOnly: true
+    action: Block
