@@ -2,7 +2,7 @@ apiVersion: security.kubearmor.com/v1
 kind: KubeArmorPolicy
 metadata:
   name: block-container-raw-sockets
-  namespace: test
+  namespace: test-1
 spec:
   message: "Alert! Block raw sockets in container"
   serverity: 1
@@ -10,6 +10,7 @@ spec:
     matchLabels:
       app: nginx
       app: ubuntu
+      app: network-tools
   capabilities:
     matchCapabilities:
     - capability: net_raw

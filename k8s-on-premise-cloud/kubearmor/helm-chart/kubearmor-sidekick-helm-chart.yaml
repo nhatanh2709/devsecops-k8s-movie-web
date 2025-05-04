@@ -98,7 +98,7 @@
         notlspaths: ""
 
       slack:
-        webhookurl: "https://hooks.slack.com/services/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"
+        webhookurl: "https://hooks.slack.com/services/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"
         channel: "devops"
         footer: "https://github.com/kubearmor/sidekick"
         username: "nhatanh2709"
