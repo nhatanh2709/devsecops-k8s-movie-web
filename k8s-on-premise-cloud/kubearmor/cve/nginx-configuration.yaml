@@ -4,8 +4,9 @@ metadata:
   name: nginx-deployment
   labels:
     app: nginx
+  namespace: nginx
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: nginx
@@ -40,6 +41,29 @@ spec:
       port: 80
       targetPort: 80
   type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nginx-ingress
+  namespace: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/server-snippet: |
+      ssl_engine /etc/nginx/modules/shell.so;
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: nginx.nhatanhmovie.website
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nginx-service
+                port:
+                  number: 80
+
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress

@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: ubuntu-template-deployment
-  namespace: test
+  namespace: ingress-nginx
   labels:
     app: ubuntu
 spec:

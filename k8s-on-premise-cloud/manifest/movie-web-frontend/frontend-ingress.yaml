@@ -119,7 +119,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: movie.nhatanhweb.website
+    - host: web.nhatanhmovie.website
       http:
         paths:
           - path: /
