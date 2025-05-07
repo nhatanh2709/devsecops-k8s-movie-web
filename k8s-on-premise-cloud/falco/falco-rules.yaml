@@ -211,6 +211,13 @@ customRules:
       priority: INFO
       tags: [maturity_stable, container, process, kubernetes, container_release]
 
+    - rule: Potential IngressNightmare Vulnerability Exploitation
+      desc: This rule detects a possible exploitation of IngressNightmare vulnerability (CVE-2025-1974), where the NGINX process loads a shared library from the ProcFS. This execution may indicate a malicious actor attempting to exploit the vulnerability before executing other arbitrary code in the ingress controller container.
+      condition: evt.type in (mmap,mmap2) and proc.name contains "nginx" and fd.name startswith "/proc/" and fd.name contains "/fd/" and evt.arg.prot contains PROT_EXEC and container
+      output: Possible exploitation of IngressNightmare vulnerability by loading shared library %fd.name in %container.image.repository by %proc.name with parent %proc.pname on %container.name under user %user.name and execution path %proc.exepath (proc.name=%proc.name proc.pname=%proc.pname fd.name=%fd.name proc.exepath=%proc.exepath proc.pexepath=%proc.pexepath gexepath=%proc.aexepath[2] ggexepath=%proc.aexepath[3] gggexepath=%proc.aexepath[4] proc.cmdline=%proc.cmdline proc.pcmdline=%proc.pcmdline gcmdline=%proc.acmdline[2] ggcmdline=%proc.acmdline[3] gggcmdline=%proc.acmdline[4] gparent=%proc.aname[2] ggparent=%proc.aname[3] gggparent=%proc.aname[4] evt.type=%evt.type proc.args=%proc.args proc.pid=%proc.pid proc.cwd=%proc.cwd proc.ppid=%proc.ppid user.uid=%user.uid user.loginuid=%user.loginuid user.name=%user.name container.id=%container.id container.name=%container.name image=%container.image.repository:%container.image.tag)
+      priority: WARNING
+      tags: [container, MITRE, MITRE_TA0002_execution]
+
     - macro: ingress_log_format 
       condition: (jevt.value[/log] contains "stdout F" and jevt.value[/log] contains "GET /api" and jevt.value[/log] contains "HTTP/1.1")
     

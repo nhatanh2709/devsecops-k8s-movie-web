@@ -31,33 +31,30 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: network-tools-deployment
+  name: ubuntu-template-deployment
+  namespace: ingress-nginx
   labels:
-    app: network-tools
+    app: ubuntu
+  namspace: test
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: network-tools
+      app: ubuntu
   template:
     metadata:
       labels:
-        app: network-tools
+        app: ubuntu
     spec:
       containers:
-      - name: network-tools-container
-        image: alpine:latest  # Sử dụng Alpine Linux
-        command: ["/bin/sh", "-c"]
-        args:
-          - apk update && 
-            apk add --no-cache iputils nmap nmap-ncat net-tools tcpdump bind-tools busybox-extras && 
-            sleep infinity
-        securityContext:
-          privileged: true  # Cần thiết cho một số công cụ như nmap
+      - name: ubuntu
+        image: ubuntu:22.04
+        command: ["/bin/bash"]
+        args: ["-c", "apt-get update -y && apt-get install iputils nmap nmap-ncat net-tools tcpdump dsniff -y && sleep infinity"]
+        ports:
+        - containerPort: 80
         resources:
           requests:
-            cpu: "50m"
-            memory: "50Mi"
+            memory: "256Mi"
           limits:
-            cpu: "200m"
-            memory: "200Mi"
+            memory: "512Mi" 

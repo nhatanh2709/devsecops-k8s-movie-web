@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redos-npm-mocha
+  namespace: cve
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redos-npm-mocha
+  template:
+    metadata:
+      labels:
+        app: redos-npm-mocha
+    spec:
+      containers:
+      - name: node-22
+        image: node:22-alpine
+        command: ["/bin/bash"]
+        args: ["-c", "mkdir -p /tools/projects && npm install mocha@5.2.0 -y"]
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            memory: "256Mi"
+          limits:
+            memory: "512Mi" 
