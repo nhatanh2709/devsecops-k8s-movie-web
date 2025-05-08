@@ -5,7 +5,7 @@ metadata:
   namespace: movie-web
 spec:
   rules:
-    - host: movie-web.nhatanhweb.website
+    - host: movie-web.nhatanhdevops.website
       http:
         paths:
           - path: /  

