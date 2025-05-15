@@ -1,8 +1,8 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: elasticsearch-pvc
-  namespace: movie-web
+  name: wazuh-indexer-pvc
+  namespace: wazuh
 spec:
   accessModes:
   - ReadWriteMany

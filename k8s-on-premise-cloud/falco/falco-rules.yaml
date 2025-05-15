@@ -59,7 +59,7 @@ customRules:
     - rule: Search Private Keys or Passwords
       desc: Detect attempts to search for private keys or passwords using the grep or find command
       condition: spawned_process  and ((grep_commands and private_key_or_password) or (proc.name = "find" and (proc.args contains "id_rsa" or proc.args contains "id_dsa" or proc.args contains "id_ed25519" or proc.args contains "id_ecdsa")))
-      output: Grep private keys or passwords activities found (user=%user.name evt_type=%evt.type user=%user.name user_uid=%user.uid user_loginuid=%user.loginuid process=%proc.name proc_exepath=%proc.exepath )
+      output: "Grep private keys or passwords activities found (user=%user.name evt_type=%evt.type user=%user.name user_uid=%user.uid user_loginuid=%user.loginuid process=%proc.name proc_exepath=%proc.exepath )"
       priority: CRITICAL
       enabled: true
       append: false
@@ -82,9 +82,66 @@ customRules:
     - rule: Find AWS Credentials
       desc: Detect attempts to search for private keys or passwords using the grep or find command, particularly targeting standard  AWS credential locations. This is often seen with unsophisticated attackers, as there are many ways to access files  using bash built-ins that could go unnoticed. Regardless, this serves as a solid baseline detection that can be tailored  to cover these gaps while maintaining an acceptable noise level. This rule complements the rule "Search Private Keys or Passwords".
       condition: spawned_process  and ((grep_commands and private_aws_credentials) or (proc.name = "find" and proc.args endswith ".aws/credentials"))
-      output: Detected AWS credentials search activity (proc_pcmdline=%proc.pcmdline proc_cwd=%proc.cwd group_gid=%group.gid group_name=%group.name user_loginname=%user.loginname evt_type=%evt.type user=%user.name user_uid=%user.uid user_loginuid=%user.loginuid process=%proc.name proc_exepath=%proc.exepath parent=%proc.pname command=%proc.cmdline terminal=%proc.tty exe_flags=%evt.arg.flags %container.info)
+      output: "Detected AWS credentials search activity (proc_pcmdline=%proc.pcmdline proc_cwd=%proc.cwd group_gid=%group.gid group_name=%group.name user_loginname=%user.loginname evt_type=%evt.type user=%user.name user_uid=%user.uid user_loginuid=%user.loginuid process=%proc.name proc_exepath=%proc.exepath parent=%proc.pname command=%proc.cmdline terminal=%proc.tty exe_flags=%evt.arg.flags %container.info)"
       priority: CRITICAL
       tags: [maturity_stable, host, process, aws]
+    
+    - rule: Modify Shell Configuration File
+      desc: Detect attempt to modify shell configuration files
+      condition: open_write and (fd.filename in (shell_config_filenames) or fd.name in (shell_config_files) or fd.directory in (shell_config_directories)) and not proc.name in (shell_binaries) and not container
+      output: "Shell configuration file modified (file=%fd.name pcmdline=%proc.pcmdline evt_type=%evt.type user=%user.name user_uid=%user.uid user_loginuid=%user.loginuid process=%proc.name proc_exepath=%proc.exepath parent=%proc.pname command=%proc.cmdline terminal=%proc.tty exe_flags=%evt.arg.flags %container.info)"
+      priority: WARNING 
+      tags: [file, mitre_persistence]
+
+    - rule: Read Shell Configuration File
+      desc: Detect attempts to read shell configuration files by non-shell programs
+      condition: open_read  and (fd.filename in (shell_config_filenames) or fd.name in (shell_config_files) or fd.directory in (shell_config_directories)) and (not proc.name in (shell_binaries))
+      output: "Shell configuration file was read by a non-shell program (user=%user.name command=%proc.cmdline file=%fd.name container_id=%container.id image=%container.image.repository)"
+      priority: WARNING
+      tags: [file, mitre_discovery]
+    
+    - rule: Read Sensitive File Untrusted Process
+      desc: An attempt to read any sensitive file (e.g. files containing user/password/authentication information). Exceptions are made for known trusted programs. Can be customized as needed. In modern containerized cloud infrastructures, accessing traditional Linux sensitive files  might be less relevant, yet it remains valuable for baseline detections. While we provide additional  rules for SSH or cloud vendor-specific credentials, you can significantly enhance your security  program by crafting custom rules for critical application credentials unique to your environment.
+      condition: open_read and sensitive_files and proc_name_exists and not proc.name in (user_mgmt_binaries, userexec_binaries, package_mgmt_binaries, cron_binaries, read_sensitive_file_binaries, shell_binaries, hids_binaries, vpn_binaries, mail_config_binaries, nomachine_binaries, sshkit_script_binaries) and not user_read_sensitive_file_conditions and not user_known_read_sensitive_files_activities and not user_read_sensitive_file_containers
+      output: "Sensitive file opened for reading by non-trusted program (file=%fd.name gparent=%proc.aname[2] ggparent=%proc.aname[3] gggparent=%proc.aname[4] evt_type=%evt.type user=%user.name user_uid=%user.uid user_loginuid=%user.loginuid process=%proc.name proc_exepath=%proc.exepath parent=%proc.pname command=%proc.cmdline terminal=%proc.tty %container.info)"
+      priority: WARNING
+      tags: [filesystem, mitre_credential_access, mitre_discovery]
+    
+    - macro: user_read_sensitive_file_conditions
+      condition: cmp_cp_by_passwd
+    
+    - macro: user_known_read_sensitive_files_activities
+      condition: (never_true)
+    
+    - macro: user_read_sensitive_file_containers
+      condition: (container and container.image.repository in (read_sensitive_file_images))
+    
+    - list: read_sensitive_file_images
+      items: []
+
+    - list: csh_config_filenames
+      items: [.cshrc, .login, .logout, .history, .tcshrc, .cshdirs]
+
+    - list: csh_config_files
+      items: [/etc/csh.cshrc, /etc/csh.login]
+
+    - list: zsh_config_filenames
+      items: [.zshenv, .zprofile, .zshrc, .zlogin, .zlogout]
+
+    - list: shell_config_filenames
+      items: [bash_config_filenames, csh_config_filenames, zsh_config_filenames]
+
+    - list: shell_config_files
+      items: [bash_config_files, csh_config_files]
+
+    - list: shell_config_directories
+      items: [/etc/zsh]
+    
+    - list: cron_binaries
+      items: [anacron, cron, crond, crontab]
+    
+    - list: sshkit_script_binaries
+      items: [10_etc_sudoers., 10_passwd_group]
 
     - macro: notification_process
       condition: evt.type=execve and proc.name in (notify_process)
@@ -109,6 +166,9 @@ customRules:
 
     - macro: allowed_ssh_hosts
       condition: (never_true)
+    
+    - macro: sensitive_files
+      condition: fd.name startswith /etc and (fd.name in (sensitive_file_names) or fd.directory in (/etc/sudoers.d, /etc/pam.d))
 
     - macro: inbound_outbound
       condition: ((((evt.type in (accept,accept4,listen,connect) and evt.dir=<)) and (fd.typechar = 4 or fd.typechar = 6)) and (fd.ip != "0.0.0.0" and fd.net != "127.0.0.0/8") and (evt.rawres >= 0 or evt.res = EINPROGRESS))
@@ -131,9 +191,6 @@ customRules:
     - list: notify_process
       items: [cat, echo, ls, vi]
 
-    - list: ssh_binaries
-      items: [ssh, sshd, scp, sftp, ssh-agent, ssh-keygen, ssh-keyscan, ssh-add, sshpass]
-
     - list: allowed_outbound_destination_ipaddrs
       items: ['"127.0.0.1"', '"8.8.8.8"']
 
@@ -143,6 +200,9 @@ customRules:
     - list: allowed_outbound_destination_domains
       items: ['"google.com"', '"facebook.com"']
     
+    - list: sensitive_file_names
+      items: [/etc/shadow, /etc/sudoers, /etc/pam.conf, /etc/security/pwquality.conf]
+    
     - macro: grep_commands
       condition: (proc.name in (grep_binaries))
 
@@ -151,6 +211,166 @@ customRules:
 
     - list: network_interfaces_configuration_block
       items: ["/etc/netconfig", "/etc/networks", "/etc/cni", "/etc/NetworkManager", "/etc/netplan", "/etc/network", "/etc/network-dispatcher"]
+    
+    - macro: run_by_package_mgmt_binaries
+      condition: proc.aname in (package_mgmt_binaries, needrestart)
+
+    - list: ssl_mgmt_binaries
+      items: [ca-certificates]
+
+    - list: dhcp_binaries
+      items: [dhclient, dhclient-script, 11-dhclient]
+
+
+    - list: userexec_binaries
+      items: [sudo, su, suexec, critical-stack, dzdo]
+
+    - list: known_setuid_binaries
+      items: [
+        sshd, dbus-daemon-lau, ping, ping6, critical-stack-, pmmcli,
+        filemng, PassengerAgent, bwrap, osdetect, nginxmng, sw-engine-fpm,
+        start-stop-daem
+        ]
+
+    - list: user_mgmt_binaries
+      items: [login_binaries, passwd_binaries, shadowutils_binaries]
+
+    - list: dev_creation_binaries
+      items: [blkid, rename_device, update_engine, sgdisk]
+
+    - list: hids_binaries
+      items: [aide, aide.wrapper, update-aide.con, logcheck, syslog-summary, osqueryd, ossec-syscheckd]
+
+    - list: vpn_binaries
+      items: [openvpn]
+
+    - list: nomachine_binaries
+      items: [nxexec, nxnode.bin, nxserver.bin, nxclient.bin]
+
+    - macro: system_procs
+      condition: proc.name in (coreutils_binaries, user_mgmt_binaries)
+
+    - list: mail_binaries
+      items: [
+        sendmail, sendmail-msp, postfix, procmail, exim4,
+        pickup, showq, mailq, dovecot, imap-login, imap,
+        mailmng-core, pop3-login, dovecot-lda, pop3
+        ]
+
+    - list: mail_config_binaries
+      items: [
+        update_conf, parse_mc, makemap_hash, newaliases, update_mk, update_tlsm4,
+        update_db, update_mc, ssmtp.postinst, mailq, postalias, postfix.config.,
+        postfix.config, postfix-script, postconf
+        ]
+    
+    - list: shell_binaries
+      items: [ash, bash, csh, ksh, sh, tcsh, zsh, dash]
+
+    - list: ssh_binaries
+      items: [
+        sshd, sftp-server, ssh-agent,
+        ssh, scp, sftp,
+        ssh-keygen, ssh-keysign, ssh-keyscan, ssh-add
+        ]
+      
+    - list: read_sensitive_file_binaries
+      items: [
+        iptables, ps, lsb_release, check-new-relea, dumpe2fs, accounts-daemon, sshd,
+        vsftpd, systemd, mysql_install_d, psql, screen, debconf-show, sa-update,
+        pam-auth-update, pam-config, /usr/sbin/spamd, polkit-agent-he, lsattr, file, sosreport,
+        scxcimservera, adclient, rtvscand, cockpit-session, userhelper, ossec-syscheckd
+        ]
+
+    - list: shell_mgmt_binaries
+      items: [add-shell, remove-shell]
+
+    - macro: shell_procs
+      condition: proc.name in (shell_binaries)
+
+    - list: coreutils_binaries
+      items: [
+        truncate, sha1sum, numfmt, fmt, fold, uniq, cut, who,
+        groups, csplit, sort, expand, printf, printenv, unlink, tee, chcon, stat,
+        basename, split, nice, "yes", whoami, sha224sum, hostid, users, stdbuf,
+        base64, unexpand, cksum, od, paste, nproc, pathchk, sha256sum, wc, test,
+        comm, arch, du, factor, sha512sum, md5sum, tr, runcon, env, dirname,
+        tsort, join, shuf, install, logname, pinky, nohup, expr, pr, tty, timeout,
+        tail, "[", seq, sha384sum, nl, head, id, mkfifo, sum, dircolors, ptx, shred,
+        tac, link, chroot, vdir, chown, touch, ls, dd, uname, "true", pwd, date,
+        chgrp, chmod, mktemp, cat, mknod, sync, ln, "false", rm, mv, cp, echo,
+        readlink, sleep, stty, mkdir, df, dir, rmdir, touch
+        ]
+
+    # dpkg -L login | grep bin | xargs ls -ld | grep -v '^d' | awk '{print $9}' | xargs -L 1 basename | tr "\\n" ","
+    - list: login_binaries
+      items: [
+        login, systemd, '"(systemd)"', systemd-logind, su,
+        nologin, faillog, lastlog, newgrp, sg
+        ]
+
+    # dpkg -L passwd | grep bin | xargs ls -ld | grep -v '^d' | awk '{print $9}' | xargs -L 1 basename | tr "\\n" ","
+    - list: passwd_binaries
+      items: [
+        shadowconfig, grpck, pwunconv, grpconv, pwck,
+        groupmod, vipw, pwconv, useradd, newusers, cppw, chpasswd, usermod,
+        groupadd, groupdel, grpunconv, chgpasswd, userdel, chage, chsh,
+        gpasswd, chfn, expiry, passwd, vigr, cpgr, adduser, addgroup, deluser, delgroup
+        ]
+
+    # repoquery -l shadow-utils | grep bin | xargs ls -ld | grep -v '^d' |
+    #     awk '{print $9}' | xargs -L 1 basename | tr "\\n" ","
+    - list: shadowutils_binaries
+      items: [
+        chage, gpasswd, lastlog, newgrp, sg, adduser, deluser, chpasswd,
+        groupadd, groupdel, addgroup, delgroup, groupmems, groupmod, grpck, grpconv, grpunconv,
+        newusers, pwck, pwconv, pwunconv, useradd, userdel, usermod, vigr, vipw, unix_chkpwd
+        ]
+
+    - list: sysdigcloud_binaries
+      items: [setup-backend, dragent, sdchecks]
+
+    - list: docker_binaries
+      items: [docker, dockerd, exe, docker-compose, docker-entrypoi, docker-runc-cur, docker-current, dockerd-current]
+
+    - list: k8s_binaries
+      items: [hyperkube, skydns, kube2sky, exechealthz, weave-net, loopback, bridge, openshift-sdn, openshift]
+
+    - list: lxd_binaries
+      items: [lxd, lxcfs]
+
+    - list: http_server_binaries
+      items: [nginx, httpd, httpd-foregroun, lighttpd, apache, apache2]
+
+    - list: db_server_binaries
+      items: [mysqld, postgres, sqlplus]
+
+    - list: mysql_mgmt_binaries
+      items: [mysql_install_d, mysql_ssl_rsa_s]
+
+    - list: postgres_mgmt_binaries
+      items: [pg_dumpall, pg_ctl, pg_lsclusters, pg_ctlcluster]
+
+    - list: db_mgmt_binaries
+      items: [mysql_mgmt_binaries, postgres_mgmt_binaries]
+
+    - list: nosql_server_binaries
+      items: [couchdb, memcached, redis-server, rabbitmq-server, mongod]
+
+    - list: gitlab_binaries
+      items: [gitlab-shell, gitlab-mon, gitlab-runner-b, git]
+
+    - list: interpreted_binaries
+      items: [lua, node, perl, perl5, perl6, php, python, python2, python3, ruby, tcl]
+    
+    - list: rpm_binaries
+      items: [dnf, rpm, rpmkey, yum, '"75-system-updat"', rhsmcertd-worke, subscription-ma,
+              repoquery, rpmkeys, rpmq, yum-cron, yum-config-mana, yum-debug-dump,
+              abrt-action-sav, rpmdb_stat, microdnf, rhn_check, yumdb]
+
+    - list: openscap_rpm_binaries
+      items: [probe_rpminfo, probe_rpmverify, probe_rpmverifyfile, probe_rpmverifypackage]
+
 
   rules-containers.yaml: |-
     - rule: Terminal Shell in container
@@ -210,6 +430,13 @@ customRules:
       output: "New container release (container=%container.name image=%container.image.repository:%container.image.tag)"
       priority: INFO
       tags: [maturity_stable, container, process, kubernetes, container_release]
+
+    - rule: Potential IngressNightmare Vulnerability Exploitation
+      desc: This rule detects a possible exploitation of IngressNightmare vulnerability (CVE-2025-1974), where the NGINX process loads a shared library from the ProcFS. This execution may indicate a malicious actor attempting to exploit the vulnerability before executing other arbitrary code in the ingress controller container.
+      condition: evt.type in (mmap,mmap2) and proc.name contains "nginx" and fd.name startswith "/proc/" and fd.name contains "/fd/" and evt.arg.prot contains PROT_EXEC and container
+      output: Possible exploitation of IngressNightmare vulnerability by loading shared library %fd.name in %container.image.repository by %proc.name with parent %proc.pname on %container.name under user %user.name and execution path %proc.exepath (proc.name=%proc.name proc.pname=%proc.pname fd.name=%fd.name proc.exepath=%proc.exepath proc.pexepath=%proc.pexepath gexepath=%proc.aexepath[2] ggexepath=%proc.aexepath[3] gggexepath=%proc.aexepath[4] proc.cmdline=%proc.cmdline proc.pcmdline=%proc.pcmdline gcmdline=%proc.acmdline[2] ggcmdline=%proc.acmdline[3] gggcmdline=%proc.acmdline[4] gparent=%proc.aname[2] ggparent=%proc.aname[3] gggparent=%proc.aname[4] evt.type=%evt.type proc.args=%proc.args proc.pid=%proc.pid proc.cwd=%proc.cwd proc.ppid=%proc.ppid user.uid=%user.uid user.loginuid=%user.loginuid user.name=%user.name container.id=%container.id container.name=%container.name image=%container.image.repository:%container.image.tag)
+      priority: WARNING
+      tags: [container, MITRE, MITRE_TA0002_execution]
 
     - macro: ingress_log_format 
       condition: (jevt.value[/log] contains "stdout F" and jevt.value[/log] contains "GET /api" and jevt.value[/log] contains "HTTP/1.1")

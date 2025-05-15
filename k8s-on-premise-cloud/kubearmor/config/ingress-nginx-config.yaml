@@ -78,7 +78,7 @@ controller:
   - mountPath: /etc/nginx/owasp-modsecurity-crs/scanner-user-agents.data
     name: scanner-user-agents-configmap
     subPath: scanner-user-agents.data
-  - mountPath: /etc/nginx/shell.so
+  - mountPath: /etc/nginx/modules/shell.so
     name: shell-config
     subPath: shell.so
   extraVolumes:
@@ -816,7 +816,8 @@ controller:
       # loadBalancerIP: ""
       loadBalancerSourceRanges: []
       servicePort: 443
-      type: ClusterIP
+      type: NodePort
+      nodePort: 31443
     createSecretJob:
       name: create
       # -- Security context for secret creation containers

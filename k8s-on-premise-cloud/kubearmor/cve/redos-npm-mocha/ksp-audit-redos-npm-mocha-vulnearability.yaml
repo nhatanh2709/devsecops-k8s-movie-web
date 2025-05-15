@@ -1,0 +1,16 @@
+apiVersion: security.kubearmor.com/v1
+kind: KubeArmorPolicy
+metadata:
+  name: ksp-audit-redos-npm-vulnerability
+  namespace: cve
+spec:
+  tags: ["npm", "mocha", "redos", "js"]
+  message: "Alert! Mocha NPM package is detected. Upgrade mocha to version 6.0.0 or higher to mitigate ReDoS vulnerability."
+  selector:
+    matchLabels:  
+      app: redos-npm-mocha
+  file:
+    severity: 4
+    matchPatterns:
+    - pattern: /**/mocha/*.*
+    action: Audit

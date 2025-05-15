@@ -11,11 +11,13 @@ spec:
     severity: 5
     matchPaths:
     - path: /etc/passwd
+      ownerOnly: true
     - path: /etc/shadow
+      ownerOnly: true
     action: Block
   process:
     severity: 5
     matchPaths:
     - path: /bin/useradd
     - path: /bin/adduser
-    action: Audit
+    action: Block
