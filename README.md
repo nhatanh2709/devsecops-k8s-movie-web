@@ -170,7 +170,7 @@ service đó trên gitlab và Argocd sẽ tiến hành monitoring và tự độ
 - Backup: S3
 
 ### Options 5: K8s On Premise and Cloud 
-![Alt text](https://imgur.com/1vDFiXe.jpg)
+[![images.png](https://i.postimg.cc/kXJzRNLY/images.png)](https://postimg.cc/HjNBfMYb)
 - Cluster: 1 Master và 2 Worker
 - IAC: Terraform
 - Cloud Networking: AWS VPC
