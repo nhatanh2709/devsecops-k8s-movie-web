@@ -13,7 +13,7 @@ metadata:
     nginx.ingress.kubernetes.io/preserve-host: "true"
     nginx.ingress.kubernetes.io/modsecurity-snippet: |
       Include /etc/nginx/modsecurity/modsecurity.conf
-      Include /etc/nginx/owasp-modsecurity-crs/crs-setup.conf
+      Include /etc/nginx/owasp-modsecurity-crs/eks-crs-setup.conf
       SecAuditEngine RelevantOnly
       SecAuditLogParts ABCDEFGHIZ
       SecAuditLogType Serial
@@ -26,11 +26,6 @@ metadata:
         access_by_lua_block {
           local blocked_rule = os.getenv("blocked_rule_id") or "forbidden"
           ngx.header.content_type = "application/json"
-          
-          if blocked_rule == "100001" then
-            ngx.say('{"status":403,"message":"Access denied: Vietnam and Australia region only","block_rule":"'..blocked_rule..'"}')
-          elseif blocked_rule == "100004" then 
-            ngx.say('{"status":429,"message":"Rate limiting exceeded","block_rule":"'..blocked_rule..'"}')
           elseif blocked_rule == "930100" then
             ngx.say('{"status":403,"message":"Path Traversal Attack detected","block_rule":"'..blocked_rule..'"}')
           elseif blocked_rule == "930121" then

@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: crs-setup-config
+  name: eks-crs-setup-config
   namespace: ingress-nginx
 data:
-  crs-setup.conf: |
+  eks-crs-setup.conf: |
     SecRule REQUEST_HEADERS:Content-Type "(?:text|application(?:/soap\+|/)|application/xml)/" \
         "id:200000,phase:1,t:none,t:lowercase,pass,nolog,ctl:requestBodyProcessor=XML,setvar:tx.blocked_rule_id=200000,setenv:blocked_rule_id=200000"
     
@@ -59,20 +59,20 @@ data:
         severity:'NOTICE',\
         ver:'custom-rules/1.0'"
 
-    SecRule IP:rate_counter "@gt 3" \
-        "id:100004,\
-        phase:1,\
-        deny,\
-        status:429,\
-        setvar:tx.block_rule_id=100004,\
-        setenv:blocked_rule_id=100004,\
-        tag:'security-control',\
-        tag:'rate-limiting',\
-        tag:'PCI/6.5.8',\
-        tag:'OWASP_CRS',\
-        tag:'paranoia-level/1',\
-        severity:'WARNING',\
-        ver:'custom-rules/1.0'"
+    # SecRule IP:rate_counter "@gt 3" \
+    #     "id:100004,\
+    #     phase:1,\
+    #     deny,\
+    #     status:429,\
+    #     setvar:tx.block_rule_id=100004,\
+    #     setenv:blocked_rule_id=100004,\
+    #     tag:'security-control',\
+    #     tag:'rate-limiting',\
+    #     tag:'PCI/6.5.8',\
+    #     tag:'OWASP_CRS',\
+    #     tag:'paranoia-level/1',\
+    #     severity:'WARNING',\
+    #     ver:'custom-rules/1.0'"
 
     SecRule REQUEST_URI_RAW|ARGS|REQUEST_HEADERS|!REQUEST_HEADERS:Referer|FILES|XML:/* "@rx (?i)(?:[/\x5c]|%(?:2(?:f|5(?:2f|5c|c(?:1%259c|0%25af))|%46)|5c|c(?:0%(?:[2aq]f|5c|9v)|1%(?:[19p]c|8s|af))|(?:bg%q|(?:e|f(?:8%8)?0%8)0%80%a)f|u(?:221[56]|EFC8|F025|002f)|%3(?:2(?:%(?:%6|4)6|F)|5%%63)|1u)|0x(?:2f|5c))(?:\.(?:%0[01]|\?)?|\?\.?|%(?:2(?:(?:5(?:2|c0%25a))?e|%45)|c0(?:\.|%[256aef]e)|u(?:(?:ff0|002)e|2024)|%32(?:%(?:%6|4)5|E)|(?:e|f(?:(?:8|c%80)%8)?0%8)0%80%ae)|0x2e){2,3}(?:[/\x5c]|%(?:2(?:f|5(?:2f|5c|c(?:1%259c|0%25af))|%46)|5c|c(?:0%(?:[2aq]f|5c|9v)|1%(?:[19p]c|8s|af))|(?:bg%q|(?:e|f(?:8%8)?0%8)0%80%a)f|u(?:221[56]|EFC8|F025|002f)|%3(?:2(?:%(?:%6|4)6|F)|5%%63)|1u)|0x(?:2f|5c))" \
         "id:930100,\

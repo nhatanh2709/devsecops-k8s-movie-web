@@ -1,0 +1,26 @@
+apiVersion: security.kubearmor.com/v1
+kind: KubeArmorPolicy
+metadata:
+  name: file-integrity-monitoring-system-paths
+  namespace: insecure
+spec:
+  action: Block
+  file:
+    matchDirectories:
+    - dir: /bin/
+      readOnly: true
+      recursive: true
+    - dir: /sbin/
+      readOnly: true
+      recursive: true
+    - dir: /usr/sbin/
+      readOnly: true
+      recursive: true
+    - dir: /usr/bin/
+      readOnly: true
+      recursive: true
+  message: Alert! An attempt to write to system directories denied.
+  severity: 5
+  tags:
+  - NIST
+  - PCI-DSS

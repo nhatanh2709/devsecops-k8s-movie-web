@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudflare-movie-web-frontend 
+  namespace: movie-web
+  labels:
+    app: cloudflare-movie-web-frontend 
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: cloudflare-movie-web-frontend 
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: cloudflare-movie-web-frontend 
+    spec:
+      containers:
+        - name: cloudflare-movie-web-frontend 
+          image: dev.nhatanhdevops.website/onlineshop/movie-web-frontend-production:v3_0ce845bb
+          ports:
+            - containerPort: 80
+              protocol: TCP  
+              name: tcp
+          resources:
+            requests:
+              memory: "256Mi"
+          env:
+            - name: REACT_APP_GATEWAY_HOST
+              value: "k8s-api-gateway"
+            - name: REACT_APP_GATEWAY_PORT
+              value: "8800"
+      imagePullSecrets:
+        - name: auth-registry
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+

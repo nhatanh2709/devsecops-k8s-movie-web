@@ -1,0 +1,2 @@
+npm uninstall mocha
+npm install mocha@latest --save-dev

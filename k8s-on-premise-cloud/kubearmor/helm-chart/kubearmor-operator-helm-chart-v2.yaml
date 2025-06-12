@@ -50,7 +50,7 @@ kubearmorConfig:
   defaultCapabilitiesPosture: audit
   defaultFilePosture: audit
   defaultNetworkPosture: audit
-  defaultVisibility: process,network
+  defaultVisibility: process,file,network
   enableStdOutLogs: false
   enableStdOutAlerts: false
   enableStdOutMsgs: false

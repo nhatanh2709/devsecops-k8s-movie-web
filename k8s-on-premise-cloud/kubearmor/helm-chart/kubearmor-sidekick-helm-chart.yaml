@@ -98,7 +98,7 @@
         notlspaths: ""
 
       slack:
-        webhookurl: "https://hooks.slack.com/services/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"
+        webhookurl: "https://hooks.slack.com/services/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"
         channel: "devops"
         footer: "https://github.com/kubearmor/sidekick"
         username: "nhatanh2709"
@@ -187,26 +187,16 @@
         checkcert: true
 
       elasticsearch:
-        # -- Elasticsearch <http://host:port>, if not `empty`, Elasticsearch is *enabled*
-        hostport: ""
-        # -- Elasticsearch index
+        hostport: "https://elastic.nhatanhmovie.website"
         index: "kubearmor"
-        # -- Elasticsearch document type
         type: "_doc"
-        # date suffix for index rotation : daily, monthly, annually, none
         suffix: "daily"
-        # -- use this username to authenticate to Elasticsearch if the username is not empty
-        username: ""
-        # -- use this password to authenticate to Elasticsearch if the password is not empty
-        password: ""
-        # -- a list of comma separated custom headers to add, syntax is "key:value,key:value"
-        customheaders: ""
-        # -- if true, checkcert flag will be ignored (server cert will always be checked)
-        mutualtls: false
-        # -- check if ssl certificate of the output is valid
-        checkcert: true
-        # -- minimum priority of event to use this output, order is `emergency\|alert\|critical\|error\|warning\|notice\|informational\|debug or ""`
+        username: "elastic"
+        password: "unHM80KHtSMHv9dZ"
         minimumpriority: ""
+        maxconcurrentrequests: 1
+        mutualtls: false
+        checkcert: true
 
       influxdb:
         # -- Influxdb <http://host:port>, if not `empty`, Influxdb is *enabled*

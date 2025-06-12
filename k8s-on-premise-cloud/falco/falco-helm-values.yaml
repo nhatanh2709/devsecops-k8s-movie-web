@@ -3,7 +3,7 @@ driver:
   kind: ebpf 
   ebpf:
     hostNetwork: true
-    leastPrivileged: false  
+    leastPrivileged: true
 
 
 controller:
@@ -33,12 +33,32 @@ falcosidekick:
       outputformat: "all"
       minimumpriority: "error"
       messageformat: 'Alert : rule *{{ .Rule }}* triggered '
+    elasticsearch:
+      hostport: "https://elastic.nhatanhmovie.website"
+      index: "falco"
+      type: "_doc"
+      suffix: "daily"
+      username: "elastic"
+      password: "OT8SKk2XgKAbfjsT"
+      minimumpriority: "notice"
+      maxconcurrentrequests: 1
+      mutualtls: false
+      checkcert: true
+      mapping: 
+        "@timestamp": "date"
+        "rule": "text"
+        "output": "text"
+        "priority": "keyword"
+        "time": "date"
 
 falco:
   jsonOutput: true
   httpOutput:
     enabled: true
     url: http://falco-falcosidekick:2801
+
+
+
 
 auditLog:
   enabled: true

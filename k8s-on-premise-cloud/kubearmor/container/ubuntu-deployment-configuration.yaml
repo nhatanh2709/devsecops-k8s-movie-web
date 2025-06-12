@@ -2,6 +2,36 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: ubuntu-deployment
+  namespace: cve
+  labels:
+    app: ubuntu
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ubuntu
+  template:
+    metadata:
+      labels:
+        app: ubuntu
+    spec:
+      containers:
+      - name: ubuntu
+        image: ubuntu:22.04
+        command: ["/bin/bash"]
+        args: ["-c", "apt-get update -y && apt-get install -y iputils-ping nmap ncat net-tools tcpdump dsniff && sleep infinity"]
+        ports:
+        - containerPort: 22
+        resources:
+          requests:
+            memory: "256Mi"
+          limits:
+            memory: "512Mi"  
+--- 
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ubuntu-deployment
   namespace: test
   labels:
     app: ubuntu
@@ -26,35 +56,4 @@ spec:
           requests:
             memory: "256Mi"
           limits:
-            memory: "512Mi"  
---- 
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: ubuntu-template-deployment
-  namespace: ingress-nginx
-  labels:
-    app: ubuntu
-  namspace: test
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: ubuntu
-  template:
-    metadata:
-      labels:
-        app: ubuntu
-    spec:
-      containers:
-      - name: ubuntu
-        image: ubuntu:22.04
-        command: ["/bin/bash"]
-        args: ["-c", "apt-get update -y && apt-get install -y iputils-ping nmap ncat net-tools tcpdump dsniff && sleep infinity"]
-        ports:
-        - containerPort: 80
-        resources:
-          requests:
-            memory: "256Mi"
-          limits:
-            memory: "512Mi" 
+            memory: "512Mi"

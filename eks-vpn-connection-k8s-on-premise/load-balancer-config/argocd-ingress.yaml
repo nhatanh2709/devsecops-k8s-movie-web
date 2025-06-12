@@ -1,26 +1,27 @@
+
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: movie-web-frontend-ingress
-  namespace: movie-web
+  name: argocd-ingress
+  namespace: argocd
   annotations:
     kubernetes.io/ingress.class: alb
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/load-balancer-type: "nlb"
-    alb.ingress.kubernetes.io/backend-protocol: HTTP
+    alb.ingress.kubernetes.io/backend-protocol: HTTPS
     alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-southeast-2:323619679467:certificate/12989dd8-d2cc-4d1d-99e0-776e9a322f1b
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS":443}]'
     alb.ingress.kubernetes.io/ssl-redirect: '443'
 spec:
   rules:
-    - host: eks-movie.nhatanhweb.website
+    - host: argocd.nhatanhweb.website
       http:
         paths:
           - path: /  
             pathType: Prefix  
             backend:
               service:
-                name: nginx-service
+                name: argocd-server
                 port:
-                  number: 80 
+                  number: 443

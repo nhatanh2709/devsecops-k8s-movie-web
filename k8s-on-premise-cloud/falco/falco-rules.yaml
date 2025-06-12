@@ -1,4 +1,4 @@
-customRules:
+bcustomRules:
   rules-sys.yaml: |-
     - rule: Unauthorized process
       desc: There is an unauthorized mount process running
@@ -9,7 +9,7 @@ customRules:
 
     - rule: Unexpected outbound connection destination
       desc: Detect any outbound connection to a destination outside of an allowed set of ips, networks, or domain names.  This rule absolutely requires profiling your environment beforehand. Network-based rules are extremely crucial  in any security program, as they can often provide the only definitive evidence. However, effectively operationalizing  them can be challenging due to the potential for noise.
-      condition: "outbound  and not ((fd.sip in (allowed_outbound_destination_ipaddrs)) or (fd.snet in (allowed_outbound_destination_networks)) or (fd.sip.name in (allowed_outbound_destination_domains)))"
+      condition: outbound  and not ((fd.sip in (allowed_outbound_destination_ipaddrs)) or (fd.snet in (allowed_outbound_destination_networks)) or (fd.sip.name in (allowed_outbound_destination_domains))) and not container.image.repository in (allowed_outbound_connection_destination_images)
       output: Disallowed outbound connection destination (connection=%fd.name lport=%fd.lport rport=%fd.rport fd_type=%fd.type fd_proto=fd.l4proto evt_type=%evt.type user=%user.name user_uid=%user.uid user_loginuid=%user.loginuid process=%proc.name proc_exepath=%proc.exepath parent=%proc.pname command=%proc.cmdline terminal=%proc.tty %container.info)
       priority: NOTICE
       tags: [maturity_stable, host, container, network, mitre_commend_and_control]
@@ -72,7 +72,7 @@ customRules:
       priority: NOTICE
       tags: [maturity_stable, host, container, network, process]
 
-    - rule: Disable SSH Connection
+    - rule: SSH Instance Connection
       desc: Detect any new SSH connection on port 22 to a host other than those in an allowed list of hosts.  This rule absolutely requires profiling your environment beforehand. Network-based rules are extremely  crucial in any security program, as they can often provide the only definitive evidence. However,  effectively operationalizing them can be challenging due to the potential for noise.
       condition: inbound_outbound  and ssh_port and not  allowed_ssh_hosts
       output: "Disallowed SSH Connection (connection=%fd.name lport=%fd.lport rport=%fd.rport fd_type=%fd.type fd_proto=fd.l4proto evt_type=%evt.type user=%user.name user_uid=%user.uid user_loginuid=%user.loginuid process=%proc.name proc_exepath=%proc.exepath parent=%proc.pname command=%proc.cmdline terminal=%proc.tty %container.info)"
@@ -142,6 +142,9 @@ customRules:
     
     - list: sshkit_script_binaries
       items: [10_etc_sudoers., 10_passwd_group]
+    
+    - list: allowed_outbound_connection_destination_images
+      items: ["docker.io/velero/velero", "quay.io/argoproj/argocd", "registry.k8s.io/coredns/coredns", "docker.io/falcosecurity/falcosidekick", "docker.elastic.co/kibana/kibana" , "docker.io/falcosecurity/falcoctl"]
 
     - macro: notification_process
       condition: evt.type=execve and proc.name in (notify_process)
@@ -380,7 +383,6 @@ customRules:
       priority: NOTICE
       tags: [maturity_stable, container, process, mitre_execution]
 
-
     - rule: Privileged Container Launched
       desc: Detect when a privileged container is launched
       condition: evt.type=container and container.privileged=true 
@@ -406,7 +408,7 @@ customRules:
       desc: Detect package management processes executed within containers. An excellent auditing rule to monitor general drifts  in containers. Particularly useful for newer rules like "Drop and execute new binary in container" during incident  response investigations. This helps identify common anti-patterns of ad-hoc debugging. Simultaneously, to maintain  optimal hygiene, it's recommended to prevent container drifts and instead opt for redeploying new containers.
       condition: spawned_process and container and user.name != "_apt" and package_mgmt_procs and not package_mgmt_ancestor_procs and not user_known_package_manager_in_container and not pkg_mgmt_in_kube_proxy
       output: "Package management process launched in container (evt_type=%evt.type user=%user.name user_uid=%user.uid user_loginuid=%user.loginuid process=%proc.name proc_exepath=%proc.exepath parent=%proc.pname command=%proc.cmdline terminal=%proc.tty exe_flags=%evt.arg.flags %container.info)"
-      priority: ERROR
+      priority: INFO
       tags: [maturity_incubating, container, process, software_mgmt, mitre_persistence, T1505]
 
 
@@ -438,6 +440,30 @@ customRules:
       priority: WARNING
       tags: [container, MITRE, MITRE_TA0002_execution]
 
+    - rule: Launch Suspicious Network Tool in Container
+      desc: Detect network tools (like netcat, nmap, tcpdump, socat, and more) launched within containers without any additional filters. This serves as a valuable general detection, but it's recommended to invest engineering effort to fine-tune it and prevent a high volume of legitimate logs. This rule complements the more specific "Netcat Remote Code Execution in Container" rule.
+      condition: spawned_process and container and network_tool_procs
+      output: Network tool launched in container | evt_type=%evt.type user=%user.name user_uid=%user.uid user_loginuid=%user.loginuid process=%proc.name proc_exepath=%proc.exepath parent=%proc.pname command=%proc.cmdline terminal=%proc.tty exe_flags=%evt.arg.flags
+      priority: NOTICE
+      tags: [maturity_incubating, container, network, process, mitre_execution, T1059]
+
+    - rule: Launch Disallowed Container 
+      desc: Detect the initial process launched within a container that is not in a list of allowed containers.  This rule holds value for generic auditing; however, this rule requires a good understanding of your  setup and consistent effort to keep the list of allowed containers current. In some situations,  this can be challenging to manage.
+      condition: container_started  and container  and not allowed_containers
+      output: Container started and not in allowed list | evt_type=%evt.type user_uid=%user.uid user_loginuid=%user.loginuid process=%proc.name proc_exepath=%proc.exepath parent=%proc.pname command=%proc.cmdline terminal=%proc.tty
+      priority: WARNING
+      tags: [maturity_sandbox, container, mitre_lateral_movement, T1610]
+    
+
+    - macro: user_known_network_tool_activities
+      condition: (never_true)
+
+    - macro: allowed_containers
+      condition: (container.id exists)
+
+    - macro: network_tool_procs
+      condition: (proc.name in (network_tool_binaries))
+
     - macro: ingress_log_format 
       condition: (jevt.value[/log] contains "stdout F" and jevt.value[/log] contains "GET /api" and jevt.value[/log] contains "HTTP/1.1")
     
@@ -455,6 +481,9 @@ customRules:
 
     - list: user_privileged_images
       items: []
+
+    - list: network_tool_binaries
+      items: [nc, ncat, netcat, nmap, dig, tcpdump, tshark, ngrep, telnet, mitmproxy, socat, zmap]
 
     - list: known_drop_and_execute_containers
       items: []
