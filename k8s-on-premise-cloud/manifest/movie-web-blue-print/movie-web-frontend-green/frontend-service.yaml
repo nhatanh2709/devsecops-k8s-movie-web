@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: movie-web-frontend-green-service 
+  namespace: movie-web-blue-green
+spec:
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+    - IPv4
+  ipFamilyPolicy: SingleStack
+  type: ClusterIP
+  selector:
+    app: movie-web-frontend
+    version: green
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+      name: tcp

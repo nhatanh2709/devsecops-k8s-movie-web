@@ -1,0 +1,14 @@
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: frontend-green-autoscale  
+  namespace: movie-web-blue-green
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: movie-web-frontend-blue  
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 50
+
