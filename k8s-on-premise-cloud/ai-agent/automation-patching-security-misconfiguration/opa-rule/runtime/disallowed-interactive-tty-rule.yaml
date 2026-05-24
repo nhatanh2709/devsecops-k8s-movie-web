@@ -1,0 +1,18 @@
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sDisallowInteractiveTTY
+metadata:
+  name: disallow-interactive-tty
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+      - apiGroups: ["apps", "extensions"]
+        kinds: ["Deployment", "ReplicaSet", "DaemonSet", "StatefulSet"]
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values: ["movie-web", "test", "movie-web-blue-green"]
+  parameters:
+    exemptImages: []

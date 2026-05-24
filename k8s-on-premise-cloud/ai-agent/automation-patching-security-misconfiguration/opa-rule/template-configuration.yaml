@@ -1,0 +1,1487 @@
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8sallowedreposv2
+  annotations:
+    metadata.gatekeeper.sh/title: "Allowed Images"
+    metadata.gatekeeper.sh/version: 1.0.0
+    description: >-
+      This policy enforces that container images must begin with a string from a specified list.
+      The updated version, K8sAllowedReposv2, introduces support for exact match and glob-like syntax to enhance security:
+      1. Exact Match: By default, if the * character is not specified, the policy strictly checks for an exact match of the full registry, repository, and/or the image name.
+      2. Glob-like Syntax: Adding * at the end of a prefix allows prefix-based matching (e.g., registry.example.com/project/*). Only the * wildcard at the end of a string is supported.
+      3. Security Note: To avoid bypasses scenarios, ensure prefixes include a trailing / where appropriate (e.g., registry.example.com/project/*).
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sAllowedReposv2
+      validation:
+        openAPIV3Schema:
+          type: object
+          properties:
+            allowedImages:
+              description: A list of allowed container image prefixes. Supports exact matches and prefixes ending with '*'.
+              type: array
+              items:
+                type: string
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8sallowedreposv2
+
+        violation[{"msg": msg}] {
+          container := input.review.object.spec.containers[_]
+          not image_matches(container.image, input.parameters.allowedImages)
+          msg := sprintf("container <%v> has an invalid image <%v>, allowed images are %v", [container.name, container.image, input.parameters.allowedImages])
+        }
+
+        violation[{"msg": msg}] {
+          container := input.review.object.spec.initContainers[_]
+          not image_matches(container.image, input.parameters.allowedImages)
+          msg := sprintf("initContainer <%v> has an invalid image <%v>, allowed images are %v", [container.name, container.image, input.parameters.allowedImages])
+        }
+
+        violation[{"msg": msg}] {
+          container := input.review.object.spec.ephemeralContainers[_]
+          not image_matches(container.image, input.parameters.allowedImages)
+          msg := sprintf("ephemeralContainer <%v> has an invalid image <%v>, allowed images are %v", [container.name, container.image, input.parameters.allowedImages])
+        }
+
+        image_matches(image, images) {
+          i_image := images[_]  # Iterate through all images in the allowed list
+          not endswith(i_image, "*")  # Check for exact match if the image does not end with *
+          i_image == image
+        }
+
+        image_matches(image, images) {
+          i_image := images[_]  # Iterate through all images in the allowed list
+          endswith(i_image, "*")  # Check for prefix match if the image ends with *
+          prefix := trim_suffix(i_image, "*")
+          startswith(image, prefix)
+        }
+---
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8spspautomountserviceaccounttokenpod
+  annotations:
+    metadata.gatekeeper.sh/title: "Automount Service Account Token for Pod"
+    metadata.gatekeeper.sh/version: 1.0.1
+    description: >-
+      Controls the ability of any Pod to enable automountServiceAccountToken.
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sPSPAutomountServiceAccountTokenPod
+      validation:
+        openAPIV3Schema:
+          type: object
+          description: >-
+            Controls the ability of any Pod to enable automountServiceAccountToken.
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8sautomountserviceaccounttoken
+
+        import data.lib.exclude_update.is_update
+
+        violation[{"msg": msg}] {
+            # spec.automountServiceAccountToken and spec.containers.volumeMounts fields are immutable.
+            not is_update(input.review)
+
+            obj := input.review.object
+            mountServiceAccountToken(obj.spec)
+            msg := sprintf("Automounting service account token is disallowed, pod: %v", [obj.metadata.name])
+        }
+
+        mountServiceAccountToken(spec) {
+            spec.automountServiceAccountToken == true
+        }
+
+        # if there is no automountServiceAccountToken spec, check on volumeMount in containers. Service Account token is mounted on /var/run/secrets/kubernetes.io/serviceaccount
+        # https://kubernetes.io/docs/reference/access-authn-authz/service-accounts-admin/#serviceaccount-admission-controller
+        mountServiceAccountToken(spec) {
+            not has_key(spec, "automountServiceAccountToken")
+            "/var/run/secrets/kubernetes.io/serviceaccount" == input_containers[_].volumeMounts[_].mountPath
+        }
+
+        input_containers[c] {
+            c := input.review.object.spec.containers[_]
+        }
+
+        input_containers[c] {
+            c := input.review.object.spec.initContainers[_]
+        }
+
+        # Ephemeral containers not checked as it is not possible to set field.
+
+        has_key(x, k) {
+            _ = x[k]
+        }
+      libs:
+        - |
+          package lib.exclude_update
+
+          is_update(review) {
+              review.operation == "UPDATE"
+          }
+---
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: noupdateserviceaccount
+  annotations:
+    metadata.gatekeeper.sh/title: "Block updating Service Account"
+    metadata.gatekeeper.sh/version: 1.0.1
+    description: "Blocks updating the service account on resources that abstract over Pods. This policy is ignored in audit mode."
+spec:
+  crd:
+    spec:
+      names:
+        kind: NoUpdateServiceAccount
+      validation:
+        openAPIV3Schema:
+          type: object
+          properties:
+            allowedGroups:
+              description: Groups that should be allowed to bypass the policy.
+              type: array
+              items:
+                type: string
+            allowedUsers:
+              description: Users that should be allowed to bypass the policy.
+              type: array
+              items:
+                type: string
+  targets:
+  - target: admission.k8s.gatekeeper.sh
+    rego: |
+      package noupdateserviceaccount
+
+      privileged(userInfo, allowedUsers, _) {
+        # Allow if the user is in allowedUsers.
+        # Use object.get so omitted parameters can't cause policy bypass by
+        # evaluating to undefined.
+        username := object.get(userInfo, "username", "")
+        allowedUsers[_] == username
+      }
+
+      privileged(userInfo, _, allowedGroups) {
+        # Allow if the user's groups intersect allowedGroups.
+        # Use object.get so omitted parameters can't cause policy bypass by
+        # evaluating to undefined.
+        userGroups := object.get(userInfo, "groups", [])
+        groups := {g | g := userGroups[_]}
+        allowed := {g | g := allowedGroups[_]}
+        intersection := groups & allowed
+        count(intersection) > 0
+      }
+
+      get_service_account(obj) = spec {
+        obj.kind == "Pod"
+        spec := obj.spec.serviceAccountName
+      } {
+        obj.kind == "ReplicationController"
+        spec := obj.spec.template.spec.serviceAccountName
+      } {
+        obj.kind == "ReplicaSet"
+        spec := obj.spec.template.spec.serviceAccountName
+      } {
+        obj.kind == "Deployment"
+        spec := obj.spec.template.spec.serviceAccountName
+      } {
+        obj.kind == "StatefulSet"
+        spec := obj.spec.template.spec.serviceAccountName
+      } {
+        obj.kind == "DaemonSet"
+        spec := obj.spec.template.spec.serviceAccountName
+      } {
+        obj.kind == "Job"
+        spec := obj.spec.template.spec.serviceAccountName
+      } {
+        obj.kind == "CronJob"
+        spec := obj.spec.jobTemplate.spec.template.spec.serviceAccountName
+      }
+
+      violation[{"msg": msg}] {
+        # This policy only applies to updates of existing resources.
+        input.review.operation == "UPDATE"
+
+        # Use object.get so omitted parameters can't cause policy bypass by
+        # evaluating to undefined.
+        params := object.get(input, "parameters", {})
+        allowedUsers := object.get(params, "allowedUsers", [])
+        allowedGroups := object.get(params, "allowedGroups", [])
+
+        # Extract the service account.
+        oldKSA := get_service_account(input.review.oldObject)
+        newKSA := get_service_account(input.review.object)
+
+        # Deny unprivileged users and groups from changing serviceAccountName.
+        not privileged(input.review.userInfo, allowedUsers, allowedGroups)
+        oldKSA != newKSA
+        msg := "user does not have permission to modify serviceAccountName"
+      } {
+        # Defensively require object to have a serviceAccountName.
+        input.review.operation == "UPDATE"
+        not get_service_account(input.review.object)
+        msg := "missing serviceAccountName field in object under review"
+      } {
+        # Defensively require oldObject to have a serviceAccountName.
+        input.review.operation == "UPDATE"
+        not get_service_account(input.review.oldObject)
+        msg := "missing serviceAccountName field in oldObject under review"
+      }
+---
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8scontainerephemeralstoragelimit
+  annotations:
+    metadata.gatekeeper.sh/title: "Container ephemeral storage limit"
+    metadata.gatekeeper.sh/version: 1.0.2
+    description: >-
+      Requires containers to have an ephemeral storage limit set and constrains
+      the limit to be within the specified maximum values.
+
+      https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sContainerEphemeralStorageLimit
+      validation:
+        openAPIV3Schema:
+          type: object
+          properties:
+            exemptImages:
+              description: >-
+                Any container that uses an image that matches an entry in this list will be excluded
+                from enforcement. Prefix-matching can be signified with `*`. For example: `my-image-*`.
+
+                It is recommended that users use the fully-qualified Docker image name (e.g. start with a domain name)
+                in order to avoid unexpectedly exempting images from an untrusted repository.
+              type: array
+              items:
+                type: string
+            ephemeral-storage:
+              description: "The maximum allowed ephemeral storage limit on a Pod, exclusive."
+              type: string
+              default: "2Gi"
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8scontainerephemeralstoragelimit
+
+        import data.lib.exclude_update.is_update
+        import data.lib.exempt_container.is_exempt
+
+        missing(obj, field) = true {
+          not obj[field]
+        }
+
+        missing(obj, field) = true {
+          obj[field] == ""
+        }
+
+        has_field(object, field) = true {
+            object[field]
+        }
+
+        # 10 ** 21
+        storage_multiple("E") = 1000000000000000000000 { true }
+
+        # 10 ** 18
+        storage_multiple("P") = 1000000000000000000 { true }
+
+        # 10 ** 15
+        storage_multiple("T") = 1000000000000000 { true }
+
+        # 10 ** 12
+        storage_multiple("G") = 1000000000000 { true }
+
+        # 10 ** 9
+        storage_multiple("M") = 1000000000 { true }
+
+        # 10 ** 6
+        storage_multiple("k") = 1000000 { true }
+
+        # 10 ** 3
+        storage_multiple("") = 1000 { true }
+
+        # Kubernetes accepts millibyte precision when it probably shouldn't.
+        # https://github.com/kubernetes/kubernetes/issues/28741
+        # 10 ** 0
+        storage_multiple("m") = 1 { true }
+
+        # 1000 * 2 ** 10
+        storage_multiple("Ki") = 1024000 { true }
+
+        # 1000 * 2 ** 20
+        storage_multiple("Mi") = 1048576000 { true }
+
+        # 1000 * 2 ** 30
+        storage_multiple("Gi") = 1073741824000 { true }
+
+        # 1000 * 2 ** 40
+        storage_multiple("Ti") = 1099511627776000 { true }
+
+        # 1000 * 2 ** 50
+        storage_multiple("Pi") = 1125899906842624000 { true }
+
+        # 1000 * 2 ** 60
+        storage_multiple("Ei") = 1152921504606846976000 { true }
+
+        get_suffix(storage) = suffix {
+          not is_string(storage)
+          suffix := ""
+        }
+
+        get_suffix(storage) = suffix {
+          is_string(storage)
+          count(storage) > 0
+          suffix := substring(storage, count(storage) - 1, -1)
+          storage_multiple(suffix)
+        }
+
+        get_suffix(storage) = suffix {
+          is_string(storage)
+          count(storage) > 1
+          suffix := substring(storage, count(storage) - 2, -1)
+          storage_multiple(suffix)
+        }
+
+        get_suffix(storage) = suffix {
+          is_string(storage)
+          count(storage) > 1
+          not storage_multiple(substring(storage, count(storage) - 1, -1))
+          not storage_multiple(substring(storage, count(storage) - 2, -1))
+          suffix := ""
+        }
+
+        get_suffix(storage) = suffix {
+          is_string(storage)
+          count(storage) == 1
+          not storage_multiple(substring(storage, count(storage) - 1, -1))
+          suffix := ""
+        }
+
+        get_suffix(storage) = suffix {
+          is_string(storage)
+          count(storage) == 0
+          suffix := ""
+        }
+
+        canonify_storage(orig) = new {
+          is_number(orig)
+          new := orig * 1000
+        }
+
+        canonify_storage(orig) = new {
+          not is_number(orig)
+          suffix := get_suffix(orig)
+          raw := replace(orig, suffix, "")
+          regex.match("^[0-9]+(\\.[0-9]+)?$", raw)
+          new := to_number(raw) * storage_multiple(suffix)
+        }
+
+        violation[{"msg": msg}] {
+          # spec.containers.resources.limits["ephemeral-storage"] field is immutable.
+          not is_update(input.review)
+
+          general_violation[{"msg": msg, "field": "containers"}]
+        }
+
+        violation[{"msg": msg}] {
+          not is_update(input.review)
+          general_violation[{"msg": msg, "field": "initContainers"}]
+        }
+
+        # Ephemeral containers not checked as it is not possible to set field.
+
+        general_violation[{"msg": msg, "field": field}] {
+          container := input.review.object.spec[field][_]
+          not is_exempt(container)
+          storage_orig := container.resources.limits["ephemeral-storage"]
+          not canonify_storage(storage_orig)
+          msg := sprintf("container <%v> ephemeral-storage limit <%v> could not be parsed", [container.name, storage_orig])
+        }
+
+        general_violation[{"msg": msg, "field": field}] {
+          container := input.review.object.spec[field][_]
+          not is_exempt(container)
+          not container.resources
+          msg := sprintf("container <%v> has no resource limits", [container.name])
+        }
+
+        general_violation[{"msg": msg, "field": field}] {
+          container := input.review.object.spec[field][_]
+          not is_exempt(container)
+          not container.resources.limits
+          msg := sprintf("container <%v> has no resource limits", [container.name])
+        }
+
+        general_violation[{"msg": msg, "field": field}] {
+          container := input.review.object.spec[field][_]
+          not is_exempt(container)
+          missing(container.resources.limits, "ephemeral-storage")
+          msg := sprintf("container <%v> has no ephemeral-storage limit", [container.name])
+        }
+
+        general_violation[{"msg": msg, "field": field}] {
+          container := input.review.object.spec[field][_]
+          not is_exempt(container)
+          storage_orig := container.resources.limits["ephemeral-storage"]
+          storage := canonify_storage(storage_orig)
+          max_storage_orig := input.parameters["ephemeral-storage"]
+          max_storage := canonify_storage(max_storage_orig)
+          storage > max_storage
+          msg := sprintf("container <%v> ephemeral-storage limit <%v> is higher than the maximum allowed of <%v>", [container.name, storage_orig, max_storage_orig])
+        }
+      libs:
+        - |
+          package lib.exclude_update
+
+          is_update(review) {
+              review.operation == "UPDATE"
+          }
+        - |
+          package lib.exempt_container
+
+          is_exempt(container) {
+              exempt_images := object.get(object.get(input, "parameters", {}), "exemptImages", [])
+              img := container.image
+              exemption := exempt_images[_]
+              _matches_exemption(img, exemption)
+          }
+
+          _matches_exemption(img, exemption) {
+              not endswith(exemption, "*")
+              exemption == img
+          }
+
+          _matches_exemption(img, exemption) {
+              endswith(exemption, "*")
+              prefix := trim_suffix(exemption, "*")
+              startswith(img, prefix)
+          }
+---
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8scontainerlimits
+  annotations:
+    metadata.gatekeeper.sh/title: "Container Limits"
+    metadata.gatekeeper.sh/version: 1.1.0
+    description: >-
+      Requires containers to have memory and CPU limits set and constrains
+      limits to be within the specified maximum values.
+
+      https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sContainerLimits
+      validation:
+        # Schema for the `parameters` field
+        openAPIV3Schema:
+          type: object
+          properties:
+            exemptImages:
+              description: >-
+                Any container that uses an image that matches an entry in this list will be excluded
+                from enforcement. Prefix-matching can be signified with `*`. For example: `my-image-*`.
+
+                It is recommended that users use the fully-qualified Docker image name (e.g. start with a domain name)
+                in order to avoid unexpectedly exempting images from an untrusted repository.
+              type: array
+              items:
+                type: string
+            cpu:
+              description: "The maximum allowed cpu limit on a Pod, exclusive. Set to -1 to disable."
+              type: string
+              default: "2000m"
+            memory:
+              description: "The maximum allowed memory limit on a Pod, exclusive."
+              type: string
+              default: "2Gi"
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8scontainerlimits
+
+        import data.lib.exempt_container.is_exempt
+
+        missing(obj, field) = true {
+          not obj[field]
+        }
+
+        missing(obj, field) = true {
+          obj[field] == ""
+        }
+
+        canonify_cpu(orig) = new {
+          is_number(orig)
+          new := orig * 1000
+        }
+
+        canonify_cpu(orig) = new {
+          not is_number(orig)
+          endswith(orig, "m")
+          new := to_number(replace(orig, "m", ""))
+        }
+
+        canonify_cpu(orig) = new {
+          not is_number(orig)
+          not endswith(orig, "m")
+          regex.match("^[0-9]+(\\.[0-9]+)?$", orig)
+          new := to_number(orig) * 1000
+        }
+
+        # 10 ** 21
+        mem_multiple("E") = 1000000000000000000000 { true }
+
+        # 10 ** 18
+        mem_multiple("P") = 1000000000000000000 { true }
+
+        # 10 ** 15
+        mem_multiple("T") = 1000000000000000 { true }
+
+        # 10 ** 12
+        mem_multiple("G") = 1000000000000 { true }
+
+        # 10 ** 9
+        mem_multiple("M") = 1000000000 { true }
+
+        # 10 ** 6
+        mem_multiple("k") = 1000000 { true }
+
+        # 10 ** 3
+        mem_multiple("") = 1000 { true }
+
+        # Kubernetes accepts millibyte precision when it probably shouldn't.
+        # https://github.com/kubernetes/kubernetes/issues/28741
+        # 10 ** 0
+        mem_multiple("m") = 1 { true }
+
+        # 1000 * 2 ** 10
+        mem_multiple("Ki") = 1024000 { true }
+
+        # 1000 * 2 ** 20
+        mem_multiple("Mi") = 1048576000 { true }
+
+        # 1000 * 2 ** 30
+        mem_multiple("Gi") = 1073741824000 { true }
+
+        # 1000 * 2 ** 40
+        mem_multiple("Ti") = 1099511627776000 { true }
+
+        # 1000 * 2 ** 50
+        mem_multiple("Pi") = 1125899906842624000 { true }
+
+        # 1000 * 2 ** 60
+        mem_multiple("Ei") = 1152921504606846976000 { true }
+
+        get_suffix(mem) = suffix {
+          not is_string(mem)
+          suffix := ""
+        }
+
+        get_suffix(mem) = suffix {
+          is_string(mem)
+          count(mem) > 0
+          suffix := substring(mem, count(mem) - 1, -1)
+          mem_multiple(suffix)
+        }
+
+        get_suffix(mem) = suffix {
+          is_string(mem)
+          count(mem) > 1
+          suffix := substring(mem, count(mem) - 2, -1)
+          mem_multiple(suffix)
+        }
+
+        get_suffix(mem) = suffix {
+          is_string(mem)
+          count(mem) > 1
+          not mem_multiple(substring(mem, count(mem) - 1, -1))
+          not mem_multiple(substring(mem, count(mem) - 2, -1))
+          suffix := ""
+        }
+
+        get_suffix(mem) = suffix {
+          is_string(mem)
+          count(mem) == 1
+          not mem_multiple(substring(mem, count(mem) - 1, -1))
+          suffix := ""
+        }
+
+        get_suffix(mem) = suffix {
+          is_string(mem)
+          count(mem) == 0
+          suffix := ""
+        }
+
+        canonify_mem(orig) = new {
+          is_number(orig)
+          new := orig * 1000
+        }
+
+        canonify_mem(orig) = new {
+          not is_number(orig)
+          suffix := get_suffix(orig)
+          raw := replace(orig, suffix, "")
+          regex.match("^[0-9]+(\\.[0-9]+)?$", raw)
+          new := to_number(raw) * mem_multiple(suffix)
+        }
+
+        violation[{"msg": msg}] {
+          general_violation[{"msg": msg, "field": "containers"}]
+        }
+
+        violation[{"msg": msg}] {
+          general_violation[{"msg": msg, "field": "initContainers"}]
+        }
+
+        # Ephemeral containers not checked as it is not possible to set field.
+
+        general_violation[{"msg": msg, "field": field}] {
+          input.parameters.cpu != "-1"
+          container := input.review.object.spec[field][_]
+          not is_exempt(container)
+          cpu_orig := container.resources.limits.cpu
+          not canonify_cpu(cpu_orig)
+          msg := sprintf("container <%v> cpu limit <%v> could not be parsed", [container.name, cpu_orig])
+        }
+
+        general_violation[{"msg": msg, "field": field}] {
+          container := input.review.object.spec[field][_]
+          not is_exempt(container)
+          mem_orig := container.resources.limits.memory
+          not canonify_mem(mem_orig)
+          msg := sprintf("container <%v> memory limit <%v> could not be parsed", [container.name, mem_orig])
+        }
+
+        general_violation[{"msg": msg, "field": field}] {
+          container := input.review.object.spec[field][_]
+          not is_exempt(container)
+          not container.resources
+          msg := sprintf("container <%v> has no resource limits", [container.name])
+        }
+
+        general_violation[{"msg": msg, "field": field}] {
+          container := input.review.object.spec[field][_]
+          not is_exempt(container)
+          not container.resources.limits
+          msg := sprintf("container <%v> has no resource limits", [container.name])
+        }
+
+        general_violation[{"msg": msg, "field": field}] {
+          input.parameters.cpu != "-1"
+          container := input.review.object.spec[field][_]
+          not is_exempt(container)
+          missing(container.resources.limits, "cpu")
+          msg := sprintf("container <%v> has no cpu limit", [container.name])
+        }
+
+        general_violation[{"msg": msg, "field": field}] {
+          container := input.review.object.spec[field][_]
+          not is_exempt(container)
+          missing(container.resources.limits, "memory")
+          msg := sprintf("container <%v> has no memory limit", [container.name])
+        }
+
+        general_violation[{"msg": msg, "field": field}] {
+          container := input.review.object.spec[field][_]
+          not is_exempt(container)
+          cpu_orig := container.resources.limits.cpu
+          cpu := canonify_cpu(cpu_orig)
+          max_cpu_orig := input.parameters.cpu
+          max_cpu_orig != "-1"
+          max_cpu := canonify_cpu(max_cpu_orig)
+          cpu > max_cpu
+          msg := sprintf("container <%v> cpu limit <%v> is higher than the maximum allowed of <%v>", [container.name, cpu_orig, max_cpu_orig])
+        }
+
+        general_violation[{"msg": msg, "field": field}] {
+          container := input.review.object.spec[field][_]
+          not is_exempt(container)
+          mem_orig := container.resources.limits.memory
+          mem := canonify_mem(mem_orig)
+          max_mem_orig := input.parameters.memory
+          max_mem := canonify_mem(max_mem_orig)
+          mem > max_mem
+          msg := sprintf("container <%v> memory limit <%v> is higher than the maximum allowed of <%v>", [container.name, mem_orig, max_mem_orig])
+        }
+      libs:
+        - |
+          package lib.exempt_container
+
+          is_exempt(container) {
+              exempt_images := object.get(object.get(input, "parameters", {}), "exemptImages", [])
+              img := container.image
+              exemption := exempt_images[_]
+              _matches_exemption(img, exemption)
+          }
+
+          _matches_exemption(img, exemption) {
+              not endswith(exemption, "*")
+              exemption == img
+          }
+
+          _matches_exemption(img, exemption) {
+              endswith(exemption, "*")
+              prefix := trim_suffix(exemption, "*")
+              startswith(img, prefix)
+          }
+---
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8scontainerratios
+  annotations:
+    metadata.gatekeeper.sh/title: "Container Ratios"
+    metadata.gatekeeper.sh/version: 1.0.1
+    description: >-
+      Sets a maximum ratio for container resource limits to requests.
+
+      https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sContainerRatios
+      validation:
+        openAPIV3Schema:
+          type: object
+          properties:
+            exemptImages:
+              description: >-
+                Any container that uses an image that matches an entry in this list will be excluded
+                from enforcement. Prefix-matching can be signified with `*`. For example: `my-image-*`.
+
+                It is recommended that users use the fully-qualified Docker image name (e.g. start with a domain name)
+                in order to avoid unexpectedly exempting images from an untrusted repository.
+              type: array
+              items:
+                type: string
+            ratio:
+              type: string
+              description: >-
+                The maximum allowed ratio of `resources.limits` to
+                `resources.requests` on a container.
+            cpuRatio:
+              type: string
+              description: >-
+                The maximum allowed ratio of `resources.limits.cpu` to
+                `resources.requests.cpu` on a container. If not specified,
+                equal to `ratio`.
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8scontainerratios
+
+        import data.lib.exempt_container.is_exempt
+
+        missing(obj, field) = true {
+          not obj[field]
+        }
+
+        missing(obj, field) = true {
+          obj[field] == ""
+        }
+
+        canonify_cpu(orig) = new {
+          is_number(orig)
+          new := orig * 1000
+        }
+
+        canonify_cpu(orig) = new {
+          not is_number(orig)
+          endswith(orig, "m")
+          new := to_number(replace(orig, "m", ""))
+        }
+
+        canonify_cpu(orig) = new {
+          not is_number(orig)
+          not endswith(orig, "m")
+          regex.match("^[0-9]+$", orig)
+          new := to_number(orig) * 1000
+        }
+
+        canonify_cpu(orig) = new {
+          not is_number(orig)
+          not endswith(orig, "m")
+          regex.match("^[0-9]+[.][0-9]+$", orig)
+          new := to_number(orig) * 1000
+        }
+
+        # 10 ** 21
+        mem_multiple("E") = 1000000000000000000000 { true }
+
+        # 10 ** 18
+        mem_multiple("P") = 1000000000000000000 { true }
+
+        # 10 ** 15
+        mem_multiple("T") = 1000000000000000 { true }
+
+        # 10 ** 12
+        mem_multiple("G") = 1000000000000 { true }
+
+        # 10 ** 9
+        mem_multiple("M") = 1000000000 { true }
+
+        # 10 ** 6
+        mem_multiple("k") = 1000000 { true }
+
+        # 10 ** 3
+        mem_multiple("") = 1000 { true }
+
+        # Kubernetes accepts millibyte precision when it probably shouldn't.
+        # https://github.com/kubernetes/kubernetes/issues/28741
+        # 10 ** 0
+        mem_multiple("m") = 1 { true }
+
+        # 1000 * 2 ** 10
+        mem_multiple("Ki") = 1024000 { true }
+
+        # 1000 * 2 ** 20
+        mem_multiple("Mi") = 1048576000 { true }
+
+        # 1000 * 2 ** 30
+        mem_multiple("Gi") = 1073741824000 { true }
+
+        # 1000 * 2 ** 40
+        mem_multiple("Ti") = 1099511627776000 { true }
+
+        # 1000 * 2 ** 50
+        mem_multiple("Pi") = 1125899906842624000 { true }
+
+        # 1000 * 2 ** 60
+        mem_multiple("Ei") = 1152921504606846976000 { true }
+
+        get_suffix(mem) = suffix {
+          not is_string(mem)
+          suffix := ""
+        }
+
+        get_suffix(mem) = suffix {
+          is_string(mem)
+          count(mem) > 0
+          suffix := substring(mem, count(mem) - 1, -1)
+          mem_multiple(suffix)
+        }
+
+        get_suffix(mem) = suffix {
+          is_string(mem)
+          count(mem) > 1
+          suffix := substring(mem, count(mem) - 2, -1)
+          mem_multiple(suffix)
+        }
+
+        get_suffix(mem) = suffix {
+          is_string(mem)
+          count(mem) > 1
+          not mem_multiple(substring(mem, count(mem) - 1, -1))
+          not mem_multiple(substring(mem, count(mem) - 2, -1))
+          suffix := ""
+        }
+
+        get_suffix(mem) = suffix {
+          is_string(mem)
+          count(mem) == 1
+          not mem_multiple(substring(mem, count(mem) - 1, -1))
+          suffix := ""
+        }
+
+        get_suffix(mem) = suffix {
+          is_string(mem)
+          count(mem) == 0
+          suffix := ""
+        }
+
+        canonify_mem(orig) = new {
+          is_number(orig)
+          new := orig * 1000
+        }
+
+        canonify_mem(orig) = new {
+          not is_number(orig)
+          suffix := get_suffix(orig)
+          raw := replace(orig, suffix, "")
+          regex.match("^[0-9]+(\\.[0-9]+)?$", raw)
+          new := to_number(raw) * mem_multiple(suffix)
+        }
+
+        violation[{"msg": msg}] {
+          general_violation[{"msg": msg, "field": "containers"}]
+        }
+
+        violation[{"msg": msg}] {
+          general_violation[{"msg": msg, "field": "initContainers"}]
+        }
+
+        # Ephemeral containers not checked as it is not possible to set field.
+
+        general_violation[{"msg": msg, "field": field}] {
+          container := input.review.object.spec[field][_]
+          not is_exempt(container)
+          cpu_orig := container.resources.limits.cpu
+          not canonify_cpu(cpu_orig)
+          msg := sprintf("container <%v> cpu limit <%v> could not be parsed", [container.name, cpu_orig])
+        }
+
+        general_violation[{"msg": msg, "field": field}] {
+          container := input.review.object.spec[field][_]
+          not is_exempt(container)
+          mem_orig := container.resources.limits.memory
+          not canonify_mem(mem_orig)
+          msg := sprintf("container <%v> memory limit <%v> could not be parsed", [container.name, mem_orig])
+        }
+
+        general_violation[{"msg": msg, "field": field}] {
+          container := input.review.object.spec[field][_]
+          not is_exempt(container)
+          cpu_orig := container.resources.requests.cpu
+          not canonify_cpu(cpu_orig)
+          msg := sprintf("container <%v> cpu request <%v> could not be parsed", [container.name, cpu_orig])
+        }
+
+        general_violation[{"msg": msg, "field": field}] {
+          container := input.review.object.spec[field][_]
+          not is_exempt(container)
+          mem_orig := container.resources.requests.memory
+          not canonify_mem(mem_orig)
+          msg := sprintf("container <%v> memory request <%v> could not be parsed", [container.name, mem_orig])
+        }
+
+        general_violation[{"msg": msg, "field": field}] {
+          container := input.review.object.spec[field][_]
+          not is_exempt(container)
+          not container.resources
+          msg := sprintf("container <%v> has no resource limits", [container.name])
+        }
+
+        general_violation[{"msg": msg, "field": field}] {
+          container := input.review.object.spec[field][_]
+          not is_exempt(container)
+          not container.resources.limits
+          msg := sprintf("container <%v> has no resource limits", [container.name])
+        }
+
+        general_violation[{"msg": msg, "field": field}] {
+          container := input.review.object.spec[field][_]
+          not is_exempt(container)
+          missing(container.resources.limits, "cpu")
+          msg := sprintf("container <%v> has no cpu limit", [container.name])
+        }
+
+        general_violation[{"msg": msg, "field": field}] {
+          container := input.review.object.spec[field][_]
+          not is_exempt(container)
+          missing(container.resources.limits, "memory")
+          msg := sprintf("container <%v> has no memory limit", [container.name])
+        }
+
+        general_violation[{"msg": msg, "field": field}] {
+          container := input.review.object.spec[field][_]
+          not is_exempt(container)
+          not container.resources.requests
+          msg := sprintf("container <%v> has no resource requests", [container.name])
+        }
+
+        general_violation[{"msg": msg, "field": field}] {
+          container := input.review.object.spec[field][_]
+          not is_exempt(container)
+          missing(container.resources.requests, "cpu")
+          msg := sprintf("container <%v> has no cpu request", [container.name])
+        }
+
+        general_violation[{"msg": msg, "field": field}] {
+          container := input.review.object.spec[field][_]
+          not is_exempt(container)
+          missing(container.resources.requests, "memory")
+          msg := sprintf("container <%v> has no memory request", [container.name])
+        }
+
+        general_violation[{"msg": msg, "field": field}] {
+          container := input.review.object.spec[field][_]
+          not is_exempt(container)
+          cpu_limits_orig := container.resources.limits.cpu
+          cpu_limits := canonify_cpu(cpu_limits_orig)
+          cpu_requests_orig := container.resources.requests.cpu
+          cpu_requests := canonify_cpu(cpu_requests_orig)
+          cpu_ratio := object.get(input.parameters, "cpuRatio", input.parameters.ratio)
+          to_number(cpu_limits) > to_number(cpu_ratio) * to_number(cpu_requests)
+          msg := sprintf("container <%v> cpu limit <%v> is higher than the maximum allowed ratio of <%v>", [container.name, cpu_limits_orig, cpu_ratio])
+        }
+
+        general_violation[{"msg": msg, "field": field}] {
+          container := input.review.object.spec[field][_]
+          not is_exempt(container)
+          mem_limits_orig := container.resources.limits.memory
+          mem_requests_orig := container.resources.requests.memory
+          mem_limits := canonify_mem(mem_limits_orig)
+          mem_requests := canonify_mem(mem_requests_orig)
+          mem_ratio := input.parameters.ratio
+          to_number(mem_limits) > to_number(mem_ratio) * to_number(mem_requests)
+          msg := sprintf("container <%v> memory limit <%v> is higher than the maximum allowed ratio of <%v>", [container.name, mem_limits_orig, mem_ratio])
+        }
+      libs:
+        - |
+          package lib.exempt_container
+
+          is_exempt(container) {
+              exempt_images := object.get(object.get(input, "parameters", {}), "exemptImages", [])
+              img := container.image
+              exemption := exempt_images[_]
+              _matches_exemption(img, exemption)
+          }
+
+          _matches_exemption(img, exemption) {
+              not endswith(exemption, "*")
+              exemption == img
+          }
+
+          _matches_exemption(img, exemption) {
+              endswith(exemption, "*")
+              prefix := trim_suffix(exemption, "*")
+              startswith(img, prefix)
+          }
+---
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8scontainerrequests
+  annotations:
+    metadata.gatekeeper.sh/title: "Container Requests"
+    metadata.gatekeeper.sh/version: 1.0.1
+    description: >-
+      Requires containers to have memory and CPU requests set and constrains
+      requests to be within the specified maximum values.
+
+      https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sContainerRequests
+      validation:
+        openAPIV3Schema:
+          type: object
+          properties:
+            exemptImages:
+              description: >-
+                Any container that uses an image that matches an entry in this list will be excluded
+                from enforcement. Prefix-matching can be signified with `*`. For example: `my-image-*`.
+
+                It is recommended that users use the fully-qualified Docker image name (e.g. start with a domain name)
+                in order to avoid unexpectedly exempting images from an untrusted repository.
+              type: array
+              items:
+                type: string
+            cpu:
+              description: "The maximum allowed cpu request on a Pod, exclusive."
+              type: string
+              default: "1000m"
+            memory:
+              description: "The maximum allowed memory request on a Pod, exclusive."
+              type: string
+              default: "1Gi"
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8scontainerrequests
+
+        import data.lib.exempt_container.is_exempt
+
+        missing(obj, field) = true {
+          not obj[field]
+        }
+
+        missing(obj, field) = true {
+          obj[field] == ""
+        }
+
+        canonify_cpu(orig) = new {
+          is_number(orig)
+          new := orig * 1000
+        }
+
+        canonify_cpu(orig) = new {
+          not is_number(orig)
+          endswith(orig, "m")
+          new := to_number(replace(orig, "m", ""))
+        }
+
+        canonify_cpu(orig) = new {
+          not is_number(orig)
+          not endswith(orig, "m")
+          regex.match("^[0-9]+(\\.[0-9]+)?$", orig)
+          new := to_number(orig) * 1000
+        }
+
+        # 10 ** 21
+        mem_multiple("E") = 1000000000000000000000 { true }
+
+        # 10 ** 18
+        mem_multiple("P") = 1000000000000000000 { true }
+
+        # 10 ** 15
+        mem_multiple("T") = 1000000000000000 { true }
+
+        # 10 ** 12
+        mem_multiple("G") = 1000000000000 { true }
+
+        # 10 ** 9
+        mem_multiple("M") = 1000000000 { true }
+
+        # 10 ** 6
+        mem_multiple("k") = 1000000 { true }
+
+        # 10 ** 3
+        mem_multiple("") = 1000 { true }
+
+        # Kubernetes accepts millibyte precision when it probably shouldn't.
+        # https://github.com/kubernetes/kubernetes/issues/28741
+        # 10 ** 0
+        mem_multiple("m") = 1 { true }
+
+        # 1000 * 2 ** 10
+        mem_multiple("Ki") = 1024000 { true }
+
+        # 1000 * 2 ** 20
+        mem_multiple("Mi") = 1048576000 { true }
+
+        # 1000 * 2 ** 30
+        mem_multiple("Gi") = 1073741824000 { true }
+
+        # 1000 * 2 ** 40
+        mem_multiple("Ti") = 1099511627776000 { true }
+
+        # 1000 * 2 ** 50
+        mem_multiple("Pi") = 1125899906842624000 { true }
+
+        # 1000 * 2 ** 60
+        mem_multiple("Ei") = 1152921504606846976000 { true }
+
+        get_suffix(mem) = suffix {
+          not is_string(mem)
+          suffix := ""
+        }
+
+        get_suffix(mem) = suffix {
+          is_string(mem)
+          count(mem) > 0
+          suffix := substring(mem, count(mem) - 1, -1)
+          mem_multiple(suffix)
+        }
+
+        get_suffix(mem) = suffix {
+          is_string(mem)
+          count(mem) > 1
+          suffix := substring(mem, count(mem) - 2, -1)
+          mem_multiple(suffix)
+        }
+
+        get_suffix(mem) = suffix {
+          is_string(mem)
+          count(mem) > 1
+          not mem_multiple(substring(mem, count(mem) - 1, -1))
+          not mem_multiple(substring(mem, count(mem) - 2, -1))
+          suffix := ""
+        }
+
+        get_suffix(mem) = suffix {
+          is_string(mem)
+          count(mem) == 1
+          not mem_multiple(substring(mem, count(mem) - 1, -1))
+          suffix := ""
+        }
+
+        get_suffix(mem) = suffix {
+          is_string(mem)
+          count(mem) == 0
+          suffix := ""
+        }
+
+        canonify_mem(orig) = new {
+          is_number(orig)
+          new := orig * 1000
+        }
+
+        canonify_mem(orig) = new {
+          not is_number(orig)
+          suffix := get_suffix(orig)
+          raw := replace(orig, suffix, "")
+          regex.match("^[0-9]+(\\.[0-9]+)?$", raw)
+          new := to_number(raw) * mem_multiple(suffix)
+        }
+
+        violation[{"msg": msg}] {
+          general_violation[{"msg": msg, "field": "containers"}]
+        }
+
+        violation[{"msg": msg}] {
+          general_violation[{"msg": msg, "field": "initContainers"}]
+        }
+
+        # Ephemeral containers not checked as it is not possible to set field.
+
+        general_violation[{"msg": msg, "field": field}] {
+          container := input.review.object.spec[field][_]
+          not is_exempt(container)
+          cpu_orig := container.resources.requests.cpu
+          not canonify_cpu(cpu_orig)
+          msg := sprintf("container <%v> cpu request <%v> could not be parsed", [container.name, cpu_orig])
+        }
+
+        general_violation[{"msg": msg, "field": field}] {
+          container := input.review.object.spec[field][_]
+          not is_exempt(container)
+          mem_orig := container.resources.requests.memory
+          not canonify_mem(mem_orig)
+          msg := sprintf("container <%v> memory request <%v> could not be parsed", [container.name, mem_orig])
+        }
+
+        general_violation[{"msg": msg, "field": field}] {
+          container := input.review.object.spec[field][_]
+          not is_exempt(container)
+          not container.resources
+          msg := sprintf("container <%v> has no resource requests", [container.name])
+        }
+
+        general_violation[{"msg": msg, "field": field}] {
+          container := input.review.object.spec[field][_]
+          not is_exempt(container)
+          not container.resources.requests
+          msg := sprintf("container <%v> has no resource requests", [container.name])
+        }
+
+        general_violation[{"msg": msg, "field": field}] {
+          container := input.review.object.spec[field][_]
+          not is_exempt(container)
+          missing(container.resources.requests, "cpu")
+          msg := sprintf("container <%v> has no cpu request", [container.name])
+        }
+
+        general_violation[{"msg": msg, "field": field}] {
+          container := input.review.object.spec[field][_]
+          not is_exempt(container)
+          missing(container.resources.requests, "memory")
+          msg := sprintf("container <%v> has no memory request", [container.name])
+        }
+
+        general_violation[{"msg": msg, "field": field}] {
+          container := input.review.object.spec[field][_]
+          not is_exempt(container)
+          cpu_orig := container.resources.requests.cpu
+          cpu := canonify_cpu(cpu_orig)
+          max_cpu_orig := input.parameters.cpu
+          max_cpu := canonify_cpu(max_cpu_orig)
+          cpu > max_cpu
+          msg := sprintf("container <%v> cpu request <%v> is higher than the maximum allowed of <%v>", [container.name, cpu_orig, max_cpu_orig])
+        }
+
+        general_violation[{"msg": msg, "field": field}] {
+          container := input.review.object.spec[field][_]
+          not is_exempt(container)
+          mem_orig := container.resources.requests.memory
+          mem := canonify_mem(mem_orig)
+          max_mem_orig := input.parameters.memory
+          max_mem := canonify_mem(max_mem_orig)
+          mem > max_mem
+          msg := sprintf("container <%v> memory request <%v> is higher than the maximum allowed of <%v>", [container.name, mem_orig, max_mem_orig])
+        }
+      libs:
+        - |
+          package lib.exempt_container
+
+          is_exempt(container) {
+              exempt_images := object.get(object.get(input, "parameters", {}), "exemptImages", [])
+              img := container.image
+              exemption := exempt_images[_]
+              _matches_exemption(img, exemption)
+          }
+
+          _matches_exemption(img, exemption) {
+              not endswith(exemption, "*")
+              exemption == img
+          }
+
+          _matches_exemption(img, exemption) {
+              endswith(exemption, "*")
+              prefix := trim_suffix(exemption, "*")
+              startswith(img, prefix)
+          }
+---
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8srequiredlabels
+  annotations:
+    metadata.gatekeeper.sh/title: "Required Labels"
+    metadata.gatekeeper.sh/version: 1.1.2
+    description: >-
+      Requires resources to contain specified labels, with values matching
+      provided regular expressions.
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sRequiredLabels
+      validation:
+        openAPIV3Schema:
+          type: object
+          properties:
+            message:
+              type: string
+            labels:
+              type: array
+              description: >-
+                A list of labels and values the object must specify.
+              items:
+                type: object
+                properties:
+                  key:
+                    type: string
+                    description: >-
+                      The required label.
+                  allowedRegex:
+                    type: string
+                    description: >-
+                      If specified, a regular expression the annotation's value
+                      must match. The value must contain at least one match for
+                      the regular expression.
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      code:
+      - engine: K8sNativeValidation
+        source:
+          validations:
+          - expression: '(has(variables.anyObject.metadata) && variables.params.labels.all(entry, has(variables.anyObject.metadata.labels) && entry.key in variables.anyObject.metadata.labels))'
+            messageExpression: '"missing required label, requires all of: " + variables.params.labels.map(entry, entry.key).join(", ")'
+          - expression: '(has(variables.anyObject.metadata) && variables.params.labels.all(entry, has(variables.anyObject.metadata.labels) && entry.key in variables.anyObject.metadata.labels && (!has(entry.allowedRegex) || string(variables.anyObject.metadata.labels[entry.key]).matches(string(entry.allowedRegex)))))'
+            message: "regex mismatch"
+      - engine: Rego
+        source:
+          rego: |
+            package k8srequiredlabels
+
+            get_message(parameters, _default) := _default {
+              not parameters.message
+            }
+
+            get_message(parameters, _) := parameters.message
+
+            violation[{"msg": msg, "details": {"missing_labels": missing}}] {
+              provided := {label | input.review.object.metadata.labels[label]}
+              required := {label | label := input.parameters.labels[_].key}
+              missing := required - provided
+              count(missing) > 0
+              def_msg := sprintf("you must provide labels: %v", [missing])
+              msg := get_message(input.parameters, def_msg)
+            }
+
+            violation[{"msg": msg}] {
+              value := input.review.object.metadata.labels[key]
+              expected := input.parameters.labels[_]
+              expected.key == key
+              # do not match if allowedRegex is not defined, or is an empty string
+              expected.allowedRegex != ""
+              not regex.match(expected.allowedRegex, value)
+              def_msg := sprintf("Label <%v: %v> does not satisfy allowed regex: %v", [key, value, expected.allowedRegex])
+              msg := get_message(input.parameters, def_msg)
+            }
+---
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8sdisallowinteractivetty
+  annotations:
+    metadata.gatekeeper.sh/title: "Disallow Interactive TTY Containers"
+    metadata.gatekeeper.sh/version: 1.0.0
+    description: >-
+      Requires that objects have the fields `spec.tty` and `spec.stdin` set to false or unset.
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sDisallowInteractiveTTY
+      validation:
+        openAPIV3Schema:
+          type: object
+          description: >-
+            Controls use of fields related to gaining an interactive session. Corresponds to the `tty` and
+            `stdin` fields in the Pod `spec.containers`, `spec.ephemeralContainers`, and `spec.initContainers`.
+          properties:
+            exemptImages:
+              description: >-
+                Any container that uses an image that matches an entry in this list will be excluded
+                from enforcement. Prefix-matching can be signified with `*`. For example: `my-image-*`.
+
+                It is recommended that users use the fully-qualified Docker image name (e.g. start with a domain name)
+                in order to avoid unexpectedly exempting images from an untrusted repository.
+              type: array
+              items:
+                type: string
+  targets:
+  - target: admission.k8s.gatekeeper.sh
+    rego: |
+        package k8sdisallowinteractivetty
+
+        import data.lib.exempt_container.is_exempt
+
+        violation[{"msg": msg, "details": {}}] {
+            c := input_containers[_]
+            not is_exempt(c)
+            input_allow_interactive_fields(c)
+            msg := sprintf("Containers using tty or stdin (%v) are not allowed running image: %v", [c.name, c.image])
+        }
+
+        input_allow_interactive_fields(c) {
+            has_field(c, "stdin")
+            not c.stdin == false
+        }
+        input_allow_interactive_fields(c) {
+            has_field(c, "tty")
+            not c.tty == false
+        }
+        input_containers[c] {
+            c := input.review.object.spec.containers[_]
+        }
+        input_containers[c] {
+            c := input.review.object.spec.ephemeralContainers[_]
+        }
+        input_containers[c] {
+            c := input.review.object.spec.initContainers[_]
+        }
+        # has_field returns whether an object has a field
+        has_field(object, field) = true {
+            object[field]
+        }
+    libs:
+      - |
+        package lib.exempt_container
+
+        is_exempt(container) {
+            exempt_images := object.get(object.get(input, "parameters", {}), "exemptImages", [])
+            img := container.image
+            exemption := exempt_images[_]
+            _matches_exemption(img, exemption)
+        }
+
+        _matches_exemption(img, exemption) {
+            not endswith(exemption, "*")
+            exemption == img
+        }
+
+        _matches_exemption(img, exemption) {
+            endswith(exemption, "*")
+            prefix := trim_suffix(exemption, "*")
+            startswith(img, prefix)
+        }
+

@@ -1,0 +1,21 @@
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sRequiredLabels
+metadata:
+  name: required-labels-rule
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+      - apiGroups: ["apps", "extensions"]
+        kinds: ["Deployment", "ReplicaSet", "DaemonSet", "StatefulSet"]
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values: ["test", "movie-web-blue-green"]
+  parameters:
+    labels:
+      - key: "app"
+        allowedRegex: "^[a-z0-9-]+$"
+  validationFailureAction: enforce

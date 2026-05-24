@@ -1,0 +1,26 @@
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sContainerRequests
+metadata:
+  name: container-requests-rule
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+      - apiGroups: ["apps", "extensions"]
+        kinds: ["Deployment", "ReplicaSet", "DaemonSet", "StatefulSet"]
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values: ["test", "movie-web-blue-green"]
+  parameters:
+    cpu: "1000m"
+    memory: "1Gi"
+    exemptImages: 
+      - "istio/*"
+      - "docker.io/istio/*"
+      - "*.istio.io/*"
+      - "service.istio.io/*"
+      - "proxyv2"
+  validationFailureAction: enforce

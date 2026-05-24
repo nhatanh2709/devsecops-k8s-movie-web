@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: container-ephemeral-storage-limit-deployment
+  namespace: test
+  labels:
+    app: container-ephemeral-storage-limit
+spec:
+  replicas: 1
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      app: container-ephemeral-storage-limit
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: container-ephemeral-storage-limit
+    spec:
+      containers:
+        - name: container-ephemeral-storage-limit
+          image: nginx:latest
+          ports:
+            - containerPort: 3002
+              protocol: TCP
+              name: tcp
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "1024Mi"    
+              cpu: "1000m"     
+              ephemeral-storage: "2Gi"
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always

@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dis-allowed-registries-deployment
+  namespace: test
+  labels:
+    app: dis-allowed-registries
+spec:
+  replicas: 1
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      app: dis-allowed-registries
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: dis-allowed-registries
+    spec:
+      containers:
+        - name: dis-allowed-registries
+          image: redis:7.0-alpine  
+          ports:
+            - containerPort: 3002
+              protocol: TCP
+              name: tcp
+          resources:
+            requests:
+              memory: "256Mi"
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always

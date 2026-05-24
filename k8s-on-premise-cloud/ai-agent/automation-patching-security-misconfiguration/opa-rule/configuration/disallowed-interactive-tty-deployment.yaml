@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: disallowed-interactive-tty-deployment
+  namespace: test
+  labels:
+    app: disallowed-interactive-tty
+spec:
+  replicas: 1
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      app: disallowed-interactive-tty
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: disallowed-interactive-tty
+    spec:
+      containers:
+        - name: disallowed-interactive-tty
+          image: nginx:latest
+          stdin: true  
+          tty: true    
+          ports:
+            - containerPort: 3002
+              protocol: TCP
+              name: tcp
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "1024Mi"    
+              cpu: "1000m"     
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always

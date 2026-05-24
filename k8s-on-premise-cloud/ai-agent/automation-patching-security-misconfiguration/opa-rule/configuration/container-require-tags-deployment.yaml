@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: container-require-tags-deployment
+  namespace: test
+  labels:
+    app: "Container_Require_Tags"
+spec:
+  replicas: 1
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      app: "Container_Require_Tags"
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: "Container_Require_Tags"
+    spec:
+      containers:
+        - name: container-require-tags
+          image: nginx:latest
+          ports:
+            - containerPort: 3002
+              protocol: TCP
+              name: tcp
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "1024Mi"    
+              cpu: "1000m"     
+              ephemeral-storage: "2Gi"
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
