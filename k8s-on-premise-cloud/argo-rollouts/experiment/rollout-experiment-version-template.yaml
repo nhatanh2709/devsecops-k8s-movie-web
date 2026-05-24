@@ -1,0 +1,65 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: rollout-experiment
+spec:
+  replicas: 4
+  strategy:
+    canary:
+      steps:
+      - setWeight: 25
+      - pause: {duration: 10s}
+      - experiment:
+          duration: 2m
+          templates:
+          - name: blue-version
+            specRef: stable
+            replicas: 2
+            metadata:
+              labels:
+                version: "blue"
+            spec:
+              containers:
+              - name: example-app-container
+                image: argoproj/rollouts-demo:blue
+                ports:
+                - containerPort: 8080
+          - name: green-version  
+            specRef: canary
+            replicas: 2
+            metadata:
+              labels:
+                version: "green"
+            spec:
+              containers:
+              - name: example-app-container
+                image: argoproj/rollouts-demo:green
+                ports:
+                - containerPort: 8080
+          analyses:
+          - name: success-metrics
+            templateName: resource-usage-analysis
+            args:
+            - name: required-pod-count
+              value: "3"
+      - setWeight: 50
+      - pause: {duration: 10s}
+      - setWeight: 75
+      - pause: {duration: 10s}
+      - setWeight: 100
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app: rollout-experiment
+  template:
+    metadata:
+      labels:
+        app: rollout-experiment
+        version: blue  
+    spec:
+      containers:
+      - name: rollouts-demo
+        image: argoproj/rollouts-demo:blue
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080

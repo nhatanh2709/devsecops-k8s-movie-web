@@ -1,0 +1,9 @@
+{{- if .Values.global.enabledComponents.configmap }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.global.appName }}-configmap
+  namespace: {{ .Values.global.namespace }}
+data:
+  {{- toYaml .Values.configmap.data | nindent 2 }}
+{{- end }}

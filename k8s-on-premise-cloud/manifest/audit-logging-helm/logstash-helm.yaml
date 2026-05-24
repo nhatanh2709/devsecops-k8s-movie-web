@@ -49,19 +49,6 @@ logstashPipeline:
           remove_field => ["event.original", "event.original.keyword"]
         }
       }
-
-      if "kubearmor" in [tags] or "kubearmor-container-logs" in [tags] {
-        json {
-          source => "message"
-          target => "kubearmor_event"
-          remove_field => ["message"]
-          tag_on_failure => ["_jsonparsefailure"]
-        }
-
-        mutate {
-          remove_field => ["event.original", "event.original.keyword"]
-        }
-      }
       
       if [kubernetes] {
         mutate {
@@ -70,22 +57,11 @@ logstashPipeline:
           }
         }
       }
-    }
+    } 
 
     output {
-      if "falco" in [tags] or "falco-container-logs" in [tags] {
-        elasticsearch {
-          hosts => ["https://elasticsearch-master:9200"]
-          cacert => "/usr/share/logstash/config/elasticsearch-master-certs/ca.crt"
-          user => '${ELASTICSEARCH_USERNAME}'
-          password => '${ELASTICSEARCH_PASSWORD}'
-          index => "falco-alerts-%{+YYYY.MM.dd}"
-          action => "create"
-          data_stream => false
-          ecs_compatibility => "v1"
-        }
-      }
-      else if "kubearmor" in [tags] or "kubearmor-container-logs" in [tags] {
+      
+      if "kubearmor" in [tags] or "kubearmor-container-logs" in [tags] {
         elasticsearch {
           hosts => ["https://elasticsearch-master:9200"]
           cacert => "/usr/share/logstash/config/elasticsearch-master-certs/ca.crt"
@@ -122,7 +98,6 @@ logstashPipeline:
         }
       }
     }
-      
 
 # Allows you to add any pattern files in your custom pattern dir
 logstashPatternDir: "/usr/share/logstash/patterns/"

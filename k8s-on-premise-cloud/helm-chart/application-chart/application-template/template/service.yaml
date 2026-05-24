@@ -1,0 +1,21 @@
+{{- if .Values.global.enabledComponents.service }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.global.appName }}-service
+  namespace: {{ .Values.global.namespace  }}
+spec:
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+    - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+    - name: tcp
+      port: {{ .Values.service.port }}
+      protocol: TCP
+      targetPort: {{ .Values.service.targetPort }}
+  selector:
+    app: {{ .Values.global.appName }}
+  sessionAffinity: None
+  type: {{ .Values.service.type }}
+{{- end }}

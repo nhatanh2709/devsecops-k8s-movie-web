@@ -3,6 +3,8 @@ kind: Application
 metadata:
   name: movie-web-backend-api-gateway
   namespace: argocd
+  annotations:  
+    notifications.argoproj.io/subscribe.on-created: argo-webhook
 spec:
   project: default
   source:
@@ -15,4 +17,4 @@ spec:
   syncPolicy:
     automated:
       prune: true
-      selfHeal: true
+      selfHeal: true  

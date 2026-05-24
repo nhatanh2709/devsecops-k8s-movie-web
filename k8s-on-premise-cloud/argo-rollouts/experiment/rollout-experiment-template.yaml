@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: rollout-experiment-step
+spec: 
+  replicas: 4
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app: rollout-experiment-step
+  template:
+    metadata:
+      labels:
+        app: rollout-experiment-step
+    spec:
+      containers:
+      - name: rollouts-demo
+        image: argoproj/rollouts-demo:blue
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+  strategy:
+    canary:
+      steps:
+      - setWeight: 25
+      - experiment:
+          templates:
+          - name: canary
+            specRef: canary
+          analyses:
+          - name: fail
+            templateName: fail

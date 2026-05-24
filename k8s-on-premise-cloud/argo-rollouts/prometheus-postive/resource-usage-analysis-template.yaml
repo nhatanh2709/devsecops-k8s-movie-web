@@ -1,0 +1,15 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: resource-usage-analysis
+  namespace: test-rollouts
+spec:
+  metrics:
+    - name: pod-count
+      successCondition: "result[0] >= 3"
+      failureCondition: "result[0] < 3"
+      provider:
+        prometheus:
+          address: http://prometheus-operated.monitoring.svc.cluster.local:9090
+          query: |
+            count(kube_pod_info{namespace="default", pod=~"example-app-.*"})

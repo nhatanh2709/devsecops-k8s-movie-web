@@ -1,0 +1,35 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: blue-green-demo
+  namespace: test-rollouts
+spec:
+  replicas: 3
+  strategy:
+    blueGreen: 
+      activeService: bluegreen-demo
+      previewService: bluegreen-demo-preview
+      autoPromotionEnabled: false
+      prePromotionAnalysis:
+        templates:
+        - templateName: always-pass
+          clusterScope: true
+      postPromotionAnalysis:
+        templates:
+        - templateName: always-fail
+          clusterScope: true
+  selector:
+    matchLabels:
+      app: bluegreen-demo
+  template:
+    metadata:
+      labels:
+        app: bluegreen-demo
+    spec:
+      containers:
+      - name: app-container
+        image: argoproj/rollouts-demo:blue
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP

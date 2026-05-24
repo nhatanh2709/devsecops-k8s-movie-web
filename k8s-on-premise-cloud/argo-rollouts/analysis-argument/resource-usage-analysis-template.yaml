@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: resource-usage-analysis
+  namespace: test-rollouts
+spec:
+  args:
+  - name: required-pod-count
+    value: "3"  
+  metrics:
+    - name: pod-count
+      successCondition: "result[0] >= {{args.required-pod-count}}"
+      failureCondition: "result[0] < {{args.required-pod-count}}"
+      provider:
+        prometheus:
+          address: https://prometheus.nhatanhmovieweb.shop
+          query: |
+            count(kube_pod_info{namespace="test-rollouts", pod=~"rollout-experiment.*"})

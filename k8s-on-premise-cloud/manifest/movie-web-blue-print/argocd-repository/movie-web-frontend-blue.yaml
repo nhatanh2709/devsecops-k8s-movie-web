@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: movie-web-frontend-blue
+  namespace: argocd
+  annotations:
+    notifications.argoproj.io/subscribe.on-sync-started.app-sync-body-info: ""
+spec:
+  project: default
+  source:
+    repoURL: 'https://gitlab.com/movie-web-manifest/movie-web-frontend-blue.git'
+    targetRevision: main
+    path: ./
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

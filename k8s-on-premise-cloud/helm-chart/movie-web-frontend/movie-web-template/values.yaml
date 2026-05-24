@@ -1,0 +1,57 @@
+global:
+  appName: "movie-web-frontend"       
+  namespace: "movie-web"       
+  enabledComponents:
+    configmap: true          
+    service: true            
+    resources: true
+
+resources:
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+  requests:
+    cpu: "250m"
+    memory: "256Mi"
+
+# Deployment
+image:
+  repository: "registry.nhatanhmovieweb.website/onlineshop/movie-web-frontend-production"
+  tag: "v53_6ca38318"
+  pullPolicy: IfNotPresent
+  pullSecret: "auth-registry" 
+
+replicaCount: 1
+rollingUpdate:
+  maxSurge: 25%
+  maxUnavailable: 25%
+
+# Service
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 80
+
+ingress:
+  enabled: false
+
+httpRoute:
+  enabled: false
+
+configmap:
+  data:
+    .env: |
+      REACT_APP_GENERATE_SOURCEMAP="false"
+      REACT_APP_API_GATEWAY_HOST="k8s-api-gateway"
+      REACT_APP_API_GATEWAY_PORT="8800"
+      REACT_APP_GATEWAY_BACKEND_URL = "https://kong-proxy.nhatanhmovie.website"
+
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+serviceAccount:
+  create: false

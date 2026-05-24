@@ -23,14 +23,19 @@ spec:
     spec:
       containers:
         - name: movie-web-backend-api-gateway
-          image: dev.nhatanhdevops.website/onlineshop/movie-web-backend-api-gateway:v10_ae7dfc4d
+          image: registry.nhatanhmovieweb.website/onlineshop/movie-web-backend-api-gateway:v24_becacaef
           ports:
             - containerPort: 8800
               protocol: TCP  
               name: tcp
           resources:
             requests:
-              memory: "256Mi"
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "1024Mi"
+              cpu: "1000m"
+              ephemeral-storage: "2Gi"
           volumeMounts:
             - name: api-gateway-configmap
               mountPath: /home/node/app/.env

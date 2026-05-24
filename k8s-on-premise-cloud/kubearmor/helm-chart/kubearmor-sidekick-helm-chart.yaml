@@ -98,13 +98,13 @@
         notlspaths: ""
 
       slack:
-        webhookurl: "https://hooks.slack.com/services/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"
-        channel: "devops"
-        footer: "https://github.com/kubearmor/sidekick"
-        username: "nhatanh2709"
-        outputformat: "all"
-        minimumpriority: "notice"
-        messageformat: "Alert : rule *{{ .Rule }}* triggered"
+        webhookurl: ""
+        channel: ""
+        footer: ""
+        username: ""
+        outputformat: ""
+        minimumpriority: ""
+        messageformat: ""
 
       rocketchat:
         # -- Rocketchat Webhook URL (ex: <https://XXXX/hooks/YYYY>), if not `empty`, Rocketchat output is *enabled*
@@ -187,12 +187,12 @@
         checkcert: true
 
       elasticsearch:
-        hostport: "https://elastic.nhatanhmovie.website"
+        hostport: "https://elastic.nhatanhmovieweb.shop"
         index: "kubearmor"
         type: "_doc"
         suffix: "daily"
         username: "elastic"
-        password: "unHM80KHtSMHv9dZ"
+        password: "PKHyLxP3ANbGY13M"
         minimumpriority: ""
         maxconcurrentrequests: 1
         mutualtls: false

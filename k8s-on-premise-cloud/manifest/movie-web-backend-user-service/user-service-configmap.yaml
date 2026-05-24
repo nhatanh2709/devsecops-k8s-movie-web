@@ -16,5 +16,5 @@ data:
     KAFKA_TOPIC="mail-services"
     MOVIE_SERVER_HOST="movie-web-backend-movie-service"
     MOVIE_SERVER_PORT="3002"
-    KAFKA_HOST="13.54.245.71"
+    KAFKA_HOST="171.235.188.237"
     KAFKA_PORT="9094"

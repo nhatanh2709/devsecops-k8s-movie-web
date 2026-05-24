@@ -7,7 +7,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: kong-manager.nhatanhmovie.website
+    - host: kong-manager.nhatanhmovieweb.shop
       http: 
         paths: 
           - backend: 

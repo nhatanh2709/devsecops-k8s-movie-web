@@ -5,7 +5,6 @@ driver:
     hostNetwork: true
     leastPrivileged: true
 
-
 controller:
   kind: daemonset
 collectors:
@@ -15,43 +14,24 @@ collectors:
     enabled: true
     socket: /var/run/containerd/containerd.sock
 
+
 falcosidekick:
   enabled: true
   webui:
     enabled: true
     redis:
+      host: "falco-falcosidekick-ui-redis" 
+      port: 6379
       persistence:
         enabled: true
         storageClass: "nfs-storage"
         size: 2Gi
-  config:
-    slack:
-      webhookurl: "https://hooks.slack.com/services/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"
-      channel: "devops"
-      footer: "https://github.com/falcosecurity/falcosidekick"
-      username: "nhatanh2709"
-      outputformat: "all"
-      minimumpriority: "error"
-      messageformat: 'Alert : rule *{{ .Rule }}* triggered '
-    elasticsearch:
-      hostport: "https://elastic.nhatanhmovie.website"
-      index: "falco"
-      type: "_doc"
-      suffix: "daily"
-      username: "elastic"
-      password: "OT8SKk2XgKAbfjsT"
-      minimumpriority: "notice"
-      maxconcurrentrequests: 1
-      mutualtls: false
-      checkcert: true
-      mapping: 
-        "@timestamp": "date"
-        "rule": "text"
-        "output": "text"
-        "priority": "keyword"
-        "time": "date"
+
 
 falco:
+  privileged: true
+  hostPID: true
+  hostNetwork: true
   jsonOutput: true
   httpOutput:
     enabled: true

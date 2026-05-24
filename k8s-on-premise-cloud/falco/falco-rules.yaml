@@ -1,11 +1,12 @@
-bcustomRules:
+customRules:
   rules-sys.yaml: |-
-    - rule: Unauthorized process
-      desc: There is an unauthorized mount process running
-      condition: unauthorization_process
-      output: "Unauthorized process (%proc.cmdline) running by user (user=%user.name user_uid=%user.uid user_loginuid=%user.loginuid)"
+    - rule: Unauthorized process execution
+      desc: Detect execution of sensitive system commands
+      condition: spawned_process and proc.name in (forbidden_process)
+      output: "Unauthorized process executed (proc=%proc.name cmdline=%proc.cmdline user=%user.name uid=%user.uid pid=%proc.pid ppid=%proc.ppid)"
       priority: WARNING
-      tags: [process, mount]
+      enabled: true
+      tags: [process, filesystem, mitre_execution]
 
     - rule: Unexpected outbound connection destination
       desc: Detect any outbound connection to a destination outside of an allowed set of ips, networks, or domain names.  This rule absolutely requires profiling your environment beforehand. Network-based rules are extremely crucial  in any security program, as they can often provide the only definitive evidence. However, effectively operationalizing  them can be challenging due to the potential for noise.
@@ -150,7 +151,7 @@ bcustomRules:
       condition: evt.type=execve and proc.name in (notify_process)
 
     - macro: unauthorization_process
-      condition: evt.type=execve and proc.name in (forbidden_process)
+      condition: spawned_process and proc.name in (forbidden_process)
 
     - macro: open_write
       condition: (evt.type in (open,openat,openat2) and evt.is_open_write=true and fd.typechar='f' and fd.num>=0)
@@ -186,10 +187,13 @@ bcustomRules:
       condition: (fd.name startswith /etc/secrets) or (fd.name=/etc/kubernetes/controller-manager.conf) or (fd.name=/etc/kubernetes/audit/audit-policy.yaml) or (fd.name=/etc/kubernetes/scheduler.conf)
 
     - macro: access_kubernetes_pki_certificates_configuration  
-      condition: (fd.name startswith "/etc/kubernetes/pki/" or fd.name startswith "/etc/kubernetes/etcd/") and (fd.name endswith "ca.crt" or fd.name endswith "apiserver.key" or fd.name endswith "apiserver-kubelet-client.crt" or fd.name endswith "peer.crt" or fd.name endswith "server.crt" or fd.name endswith "healthcheck-client.crt") and (evt.type in (open,openat,openat2,read,readv,pread,preadv,execve,execveat))   
+      condition: 
+        (open_read) 
+        and (fd.name startswith "/etc/kubernetes/pki/" or fd.name startswith "/etc/kubernetes/etcd/")
+        and (fd.name glob "*.crt" or fd.name glob "*.key" or fd.name glob "*.pem" or fd.name glob "*.csr")
 
     - list: forbidden_process
-      items: [mount, sudo, su, rm]
+      items: [mount, sudo, su, rm, dd, chmod, chown, useradd, passwd]
 
     - list: notify_process
       items: [cat, echo, ls, vi]
@@ -201,7 +205,7 @@ bcustomRules:
       items: ['"192.168.1.0/24"']
 
     - list: allowed_outbound_destination_domains
-      items: ['"google.com"', '"facebook.com"']
+      items: ['"google.com"']
     
     - list: sensitive_file_names
       items: [/etc/shadow, /etc/sudoers, /etc/pam.conf, /etc/security/pwquality.conf]
@@ -393,7 +397,8 @@ bcustomRules:
     - rule: Contact K8S API Server From Container
       desc: Detect attempts to communicate with the K8S API Server from a container by non-profiled users
       condition: evt.type=connect and evt.dir=<  and (fd.typechar=4 or fd.typechar=6)  and container  and k8s_api_server  and not k8s_containers  and not user_known_contact_k8s_api_server_activities
-      output: "Unexpected connection to K8s API Server from container (connection=%fd.name lport=%fd.lport rport=%fd.rport fd_type=%fd.type fd_proto=%fd.l4proto evt_type=%evt.type user=%user.name user_uid=%user.uid user_loginuid=%user.loginuid process=%proc.name proc_exepath=%proc.exepath parent=%proc.pname command=%proc.cmdline terminal=%proc.tty %container.info)"
+      output: "Unexpected connection to K8s API Server from container (connection=%fd.name lport=%fd.lport rport=%fd.rport fd_type=%fd.type fd_proto=%fd.l4proto evt_type=%evt.type 
+      user=%user.name user_uid=%user.uid user_loginuid=%user.loginuid process=%proc.name proc_exepath=%proc.exepath parent=%proc.pname command=%proc.cmdline terminal=%proc.tty %container.info)"
       priority: NOTICE
       tags: [maturity_stable, container, network]
 

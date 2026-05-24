@@ -23,7 +23,7 @@ spec:
     spec:
       containers:
         - name: movie-web-frontend 
-          image: dev.nhatanhdevops.website/onlineshop/movie-web-frontend-production:v30_d0c1a18b
+          image: registry.nhatanhmovieweb.website/onlineshop/movie-web-frontend-production:v53_6ca38318
           ports:
             - containerPort: 80
               protocol: TCP  

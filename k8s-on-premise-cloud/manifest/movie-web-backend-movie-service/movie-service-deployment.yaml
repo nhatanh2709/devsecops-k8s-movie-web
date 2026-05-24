@@ -23,14 +23,19 @@ spec:
     spec:
       containers:
         - name: movie-web-backend-movie-service
-          image: dev.nhatanhdevops.website/onlineshop/movie-web-backend-movie-service:v11_d9b43af2
+          image: registry.nhatanhmovieweb.website/onlineshop/movie-web-backend-movie-service:v24_86b69056
           ports:
             - containerPort: 3002
               protocol: TCP  
               name: tcp
           resources:
             requests:
-              memory: "256Mi"
+              memory: "512Mi"
+              cpu: "500m"
+            limits: 
+              memory: "1024Mi"
+              cpu: "1000m"
+              ephemeral-storage: "2Gi"
           volumeMounts:
             - name: movie-service-configmap
               mountPath: /home/node/app/.env

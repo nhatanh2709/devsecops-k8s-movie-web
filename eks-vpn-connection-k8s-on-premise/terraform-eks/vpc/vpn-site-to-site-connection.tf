@@ -26,7 +26,7 @@ resource "aws_vpn_connection" "vpn_connection" {
 }
 
 resource "aws_vpn_connection_route" "vpn_connection" {
-  destination_cidr_block = "192.168.0.0/16"  
+  destination_cidr_block = "192.168.1.0/24"  
   vpn_connection_id      = aws_vpn_connection.vpn_connection.id
 }
 

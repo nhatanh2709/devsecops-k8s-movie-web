@@ -12,9 +12,9 @@ data:
     server {
         client_max_body_size 20M;
         listen 80;
-        server_name eks-movie.nhatanhweb.website;
-        access_log /var/log/nginx/movie.nhatanhweb.website.access.log;
-        error_log /var/log/nginx/movie.nhatanhweb.website.error.log;
+        server_name eks-movie.nhatanhdevops.shop;
+        access_log /var/log/nginx/movie.nhatanhdevops.shop.access.log;
+        error_log /var/log/nginx/movie.nhatanhdevops.shop.error.log;
         location / {
             proxy_pass http://backend_servers;
             proxy_http_version 1.1;

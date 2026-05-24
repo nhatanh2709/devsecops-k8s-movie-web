@@ -1,0 +1,50 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Experiment
+metadata:
+  name: nginx-example-app-experiment
+  namespace: test-rollouts
+spec:
+  duration: 10m 
+  templates:
+  - name: stable
+    replicas: 2
+    selector:
+      matchLabels:
+        app: example-app
+        role: stable
+    template:
+      metadata:
+        labels:
+          app: example-app
+          role: stable
+      spec:
+        containers:
+        - name: example-app-container
+          image: nginx:1.19.10
+          ports:
+          - containerPort: 80
+          
+  - name: canary
+    replicas: 2  
+    selector:
+      matchLabels:
+        app: example-app
+        role: canary
+    template:
+      metadata:
+        labels:
+          app: example-app
+          role: canary
+      spec:
+        containers:
+        - name: example-app-container
+          image: nginx:1.19.1
+          ports:
+          - containerPort: 80
+          
+  analyses:
+  - name: success-metrics
+    templateName: resource-usage-analysis
+    args:
+    - name: required-pod-count
+      value: "3"

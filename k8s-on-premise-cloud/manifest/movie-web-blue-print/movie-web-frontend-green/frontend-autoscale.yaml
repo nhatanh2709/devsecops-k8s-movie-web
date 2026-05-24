@@ -7,7 +7,7 @@ spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: movie-web-frontend-blue  
+    name: movie-web-frontend-green
   minReplicas: 1
   maxReplicas: 3
   targetCPUUtilizationPercentage: 50

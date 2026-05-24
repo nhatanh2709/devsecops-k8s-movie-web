@@ -114,7 +114,7 @@ variable "cluster_config" {
   })
   default = {
     name    = "eks-cluster"
-    version = "1.31"
+    version = "1.32"
   }
 }
 
@@ -162,11 +162,11 @@ variable "addons" {
   default = [
    {
       name    = "kube-proxy"
-      version = "v1.31.3-eksbuild.2"
+      version = "v1.32.6-eksbuild.12"  
     },
     {
       name    = "vpc-cni"
-      version = "v1.19.2-eksbuild.5"
+      version = "v1.20.4-eksbuild.2"   
     },
     {
       name    = "coredns"

@@ -47,9 +47,9 @@ kubearmorOperator:
   securityContext: {}
 
 kubearmorConfig:
-  defaultCapabilitiesPosture: audit
-  defaultFilePosture: audit
-  defaultNetworkPosture: audit
+  defaultCapabilitiesPosture: block
+  defaultFilePosture: block
+  defaultNetworkPosture: block
   defaultVisibility: process,file,network
   enableStdOutLogs: false
   enableStdOutAlerts: false

@@ -28,9 +28,9 @@ metadata:
           local blocked_rule = os.getenv("blocked_rule_id") or "forbidden"
           ngx.header.content_type = "application/json"
           
-          if blocked_rule == "100001" then
-            ngx.say('{"status":403,"message":"Access denied: Vietnam and Australia region only","block_rule":"'..blocked_rule..'"}')
-          elseif blocked_rule == "100004" then 
+          # if blocked_rule == "100001" then
+          #   ngx.say('{"status":403,"message":"Access denied: Vietnam and Australia region only","block_rule":"'..blocked_rule..'"}')
+          if blocked_rule == "100004" then 
             ngx.say('{"status":429,"message":"Rate limiting exceeded","block_rule":"'..blocked_rule..'"}')
           elseif blocked_rule == "930100" then
             ngx.say('{"status":403,"message":"Path Traversal Attack detected","block_rule":"'..blocked_rule..'"}')
@@ -119,7 +119,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: web.nhatanhmovie.website
+    - host: web.nhatanhmovieweb.shop
       http:
         paths:
           - path: /

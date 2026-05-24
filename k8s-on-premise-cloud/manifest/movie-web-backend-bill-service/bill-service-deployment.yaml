@@ -23,7 +23,7 @@ spec:
     spec:
       containers:
         - name: movie-web-backend-bill-service
-          image: dev.nhatanhdevops.website/onlineshop/movie-web-backend-bill-service:v10_d9b43af2
+          image: registry.nhatanhmovieweb.website/onlineshop/movie-web-backend-bill-service:v22_a1cd2a04
           ports:
             - containerPort: 3003
               protocol: TCP  

@@ -1,0 +1,54 @@
+global:
+  appName: "application"
+  namespace: "movie-web"
+  enabledComponents:
+    configmap: false
+    resources: true
+
+resources:
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+  requests:
+    cpu: "250m"
+    memory: "256Mi"
+
+image: 
+  repository: "slayder2709/ubuntu"
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+ingress:
+  enabled: false
+
+httpRoute:
+  enabled: false
+
+replicaCount: 1
+rollingUpdate:
+  maxSurge: 25%
+  maxUnavailable: 25%
+
+# Service
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 80
+
+
+mariadb: 
+  enabled: true
+  image:
+    repository: bitnami/mariadb
+    tag: latest
+  auth:
+    rootPassword: anhproqn999
+    username: nhatanh2709
+    password: anhproqn999
+    database: application
+  primary:
+    persistence:
+      size: 8Gi
+      storageClass: nfs-client
+      accessModes:
+        - ReadWriteOnce

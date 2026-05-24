@@ -19,7 +19,6 @@ spec:
         package servicenoendpoints
 
         violation[{"msg": msg, "details": {"should_delete": true}}] {
-          # Kiểm tra tại audit time (tất cả services)
           service := data.inventory.cluster["v1"]["Service"][_]
           not has_endpoints(service.metadata.namespace, service.metadata.name)
           creation_time := time.parse_rfc3339_ns(service.metadata.creationTimestamp)

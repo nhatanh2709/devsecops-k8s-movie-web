@@ -1,0 +1,79 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- deployment.yaml
+- service.yaml
+
+namespace: movie-web
+
+labels:
+  - pairs: 
+      app: nginx-app
+      enviroment: production
+
+commonAnnotations:
+  version: "1.0.0"
+
+configMapGenerator:
+- name: nginx-config
+  files:
+  -  configmap/app.env
+  options: 
+    labels:
+      app: nginx-app
+
+patches:
+- target: 
+    kind: Service
+    name: nginx-service
+  patch: |-
+    - op: replace
+      path: /metadata/name
+      value: nginx-service-production
+
+- target:
+    kind: Deployment
+    name: nginx-deployment
+  patch: |-
+    - op: replace
+      path: /spec/replicas
+      value: 10
+
+- target:
+    kind: Deployment
+    name: nginx-deployment
+  patch: |-
+    - op: add
+      path: /spec/template/metadata/labels/version
+      value: v1
+
+- target:
+    kind: Deployment
+    name: nginx-deployment
+  patch: |-
+    - op: replace
+      path: /spec/template/spec/containers/0
+      value: 
+        image: nginx:1.14.2
+        name: nginx-production
+        port:
+        - containerPort: 80
+
+- target: 
+    kind: Deployment
+    name: nginx-deployment
+  patch: |-
+    - op: add
+      path: /spec/template/spec/containers/-
+      value: 
+        image: haproxy
+        name: haproxy
+
+- target: 
+    kind: Deployment
+    name: nginx-deployment
+  path: replica-patch.yaml
+
+namePrefix: nhatanh2709-
+nameSuffix: -production

@@ -41,5 +41,5 @@ env:
   pg_user: kong
   pg_password: nhatanh2709
   pg_host: postgres.kong.svc.cluster.local
-  admin_gui_url: "https://kong-manager.nhatanhmovie.website"
-  admin_gui_api_url: "https://kong-admin.nhatanhmovie.website"
+  admin_gui_url: "https://kong-manager.nhatanhmovieweb.shop"
+  admin_gui_api_url: "https://kong-admin.nhatanhmovieweb.shop"

@@ -1,18 +1,18 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: movie-web-frontend-green
+  name: movie-web-frontend-green 
   namespace: movie-web-blue-green
   labels:
-    app: movie-web-frontend-green
+    app: movie-web-frontend-green 
     version: green
 spec:
   replicas: 1
   revisionHistoryLimit: 3
   selector:
     matchLabels:
-      app: movie-web-frontend
-      version: green
+      app: movie-web-frontend 
+      version: green 
   strategy:
     rollingUpdate:
       maxSurge: 25%
@@ -26,19 +26,14 @@ spec:
     spec:
       containers:
         - name: movie-web-frontend 
-          image: registry.nhatanhmovieweb.website/onlineshop/movie-web-frontend-production:v53_6ca38318
+          image: registry.nhatanhmovieweb.shop/onlineshop/movie-web-frontend-production:v53_6ca38318
           ports:
             - containerPort: 80
               protocol: TCP  
-              name: http
+              name: tcp
           resources:
             requests:
               memory: "512Mi"
-              cpu: "500m"
-            limits: 
-              memory: "1024Mi"
-              cpu: "1000m"
-              ephemeral-storage: "2Gi"
           env:
             - name: REACT_APP_GATEWAY_HOST
               value: "k8s-api-gateway"
@@ -46,15 +41,15 @@ spec:
               value: "8800"
           envFrom:
             - secretRef:
-                name: movie-web-frontend-blue-secret
+                name: movie-web-frontend-green-secret
           volumeMounts:
-            - name: frontend-blue-configmap
+            - name: frontend-green-configmap
               mountPath: /home/node/app/.env
               subPath: .env          
       imagePullSecrets:
         - name: auth-registry
       volumes:
-        - name: frontend-blue-configmap
+        - name: frontend-green-configmap
           configMap:
             defaultMode: 420
-            name: movie-web-frontend-blue-configmap
+            name: movie-web-frontend-green-configmap

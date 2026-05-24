@@ -12,5 +12,5 @@ data:
     ELASTIC_SEARCH_HOST="elasticsearch-master.logging.svc.cluster.local"
     ELASTIC_SEARCH_PORT="9200"
     ELASTIC_SEARCH_USERNAME=elastic
-    ELASTIC_SEARCH_PASSWORD=vjlD0Do3BCdFkNxP
+    ELASTIC_SEARCH_PASSWORD=9713DF6Zd5v4Gd6E
 

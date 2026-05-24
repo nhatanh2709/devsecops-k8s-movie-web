@@ -19,5 +19,4 @@ spec:
       - "nginx"
       - "docker.io/"
       - "dev.nhatanhdevops.website/onlineshop"
-      - "ubuntu"
   validationFailureAction: enforce

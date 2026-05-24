@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.global.appName }}-deployment
+  namespace: {{ .Values.global.namespace }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.global.appName }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.global.appName }}
+    spec:
+      containers:
+        - name: {{ .Values.global.appName }}
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.service.targetPort }}
+          {{- if .Values.global.enabledComponents.resources }}
+          resources:
+            requests:
+              memory: {{ .Values.global.requestMemory }}
+              cpu: {{ .Values.global.requestCpu }}
+            limits:
+              memory: {{ .Values.global.limitMemory }}
+              cpu: {{ .Values.global.limitCpu }}
+          {{- end }}
+          {{- if .Values.global.enabledComponents.configmap }}
+          volumeMounts:
+            - name: config-volume
+              mountPath: /home/node/app/.env
+              subPath: .env
+          {{- end }}
+      imagePullSecrets:
+        - name: {{ .Values.image.pullSecret }}
+      {{- if .Values.global.enabledComponents.configmap }}
+      volumes:
+        - name: config-volume
+          configMap:
+            defaultMode: 420
+            name: {{ .Values.global.appName }}-configmap
+      {{- end }}

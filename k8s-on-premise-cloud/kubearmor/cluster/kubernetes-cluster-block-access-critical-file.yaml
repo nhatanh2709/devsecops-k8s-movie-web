@@ -10,7 +10,7 @@ spec:
       - key: namespace
         operator: In
         values:
-          - insecure
+          - default
   file:
     matchPaths:
       - path: /etc/host.conf

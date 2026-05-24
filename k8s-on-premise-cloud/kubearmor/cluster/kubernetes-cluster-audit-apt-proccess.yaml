@@ -10,9 +10,11 @@ spec:
       - key: namespace
         operator: In
         values:
-          - insecure
+          - default
   process:
     matchPaths:
       - path: /usr/bin/apt-get
       - path: /usr/bin/apt
+      - path: /usr/bin/nc
+      - path:
   action: Block

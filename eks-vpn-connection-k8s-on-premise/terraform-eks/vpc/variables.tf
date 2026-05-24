@@ -114,7 +114,7 @@ variable "cluster_name" {
 variable "customer_gateway_name" {
   description = "Name of Customer Gateway"
   type        = string
-  default     = "EKS Customer Gateway VPN "
+  default     = "EKS Customer Gateway"
 }
 
 variable "vpn_gateway_name" {
@@ -132,5 +132,5 @@ variable "vpn_site_to_site_connection" {
 variable "ip_address" {
   description = "IP Address"
   type        = string
-  default     = "171.239.11.33"
+  default     = "171.235.188.237"
 }

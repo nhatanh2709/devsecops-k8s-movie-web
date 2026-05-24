@@ -1,6 +1,6 @@
 resource "aws_fis_experiment_template" "delete_pod_eks_clusters_template" {
   description = "Terminate Load Balancer Pods in EKS Cluster in Workload Non-Prod"
-  role_arn    = "arn:aws:iam::145023122173:role/fis-experiment-role"
+  role_arn    = "arn:aws:iam::323135480174:role/fis-experiment-role"
   
   action {
     name      = "aws-delete-movie-web-load-balancer-pods"

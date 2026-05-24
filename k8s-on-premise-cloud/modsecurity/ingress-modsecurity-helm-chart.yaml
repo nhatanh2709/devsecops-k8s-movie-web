@@ -59,6 +59,7 @@ controller:
     enable-owasp-modsecurity-crs: "false"
     annotations-risk-level: Critical
     error-log-level: "info"
+    allow-snippet-annotations: "true"
     http-snippet: |
       log_format modsec '$remote_addr - $remote_user [$time_local]'
                       '"$request" $status $body_bytes_sent '
@@ -69,9 +70,9 @@ controller:
   - mountPath: /etc/nginx/modsecurity/modsecurity.conf
     name: modsecurity-config
     subPath: modsecurity.conf
-  - mountPath: /etc/nginx/owasp-modsecurity-crs/eks-crs-setup.conf
-    name: eks-crs-setup-config
-    subPath: eks-crs-setup.conf
+  # - mountPath: /etc/nginx/owasp-modsecurity-crs/eks-crs-setup.conf
+  #   name: eks-crs-setup-config
+  #   subPath: eks-crs-setup.conf
   - mountPath: /etc/nginx/owasp-modsecurity-crs/crs-setup.conf
     name: crs-setup-config
     subPath: crs-setup.conf
@@ -94,9 +95,9 @@ controller:
   - configMap:
       name: crs-setup-config
     name: crs-setup-config
-  - configMap: 
-      name: eks-crs-setup-config
-    name: eks-crs-setup-config
+  # - configMap: 
+  #     name: eks-crs-setup-config
+  #   name: eks-crs-setup-config
   - configMap:
       name: lfi-data-configmap
     name: lfi-data-configmap

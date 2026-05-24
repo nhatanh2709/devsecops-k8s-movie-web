@@ -24,11 +24,6 @@ resource "aws_eks_cluster" "eks-cluster" {
 
 }
 
-locals {
-  oidc = trimprefix(data.aws_eks_cluster.eks-cluster.identity[0].oidc[0].issuer, "https://")
-}
-
-
 # NODE GROUP
 resource "aws_eks_node_group" "node-ec2" {
   for_each        = { for node_group in var.node_groups : node_group.name => node_group }
@@ -39,7 +34,7 @@ resource "aws_eks_node_group" "node-ec2" {
 
   scaling_config {
     desired_size = try(each.value.scaling_config.desired_size, 2)
-    max_size     = try(each.value.scaling_config.max_size, 3)
+    max_size     = try(each.value.scaling_config.max_size, 5)
     min_size     = try(each.value.scaling_config.min_size, 2)
   }
 
@@ -60,6 +55,10 @@ resource "aws_eks_node_group" "node-ec2" {
     aws_iam_role_policy_attachment.AmazonEC2ContainerRegistryReadOnly,
     aws_iam_role_policy_attachment.AmazonEKS_CNI_Policy
   ]
+}
+
+locals {
+  oidc = trimprefix(data.aws_eks_cluster.eks-cluster.identity[0].oidc[0].issuer, "https://")
 }
 
 

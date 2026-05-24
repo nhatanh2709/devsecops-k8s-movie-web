@@ -1,0 +1,10 @@
+alias k='kubectl'
+alias kgp='k get pod'
+alias kgs='k get service'
+alias kgd='k get deployment'
+alias kgn='k get node'
+alias kn='k config set-context --current --namespace'
+alias ka='k apply -f'
+export do='--dry-run=client -oyaml'
+export now='--grace-period=0 --force'
+export ow="-owide"
