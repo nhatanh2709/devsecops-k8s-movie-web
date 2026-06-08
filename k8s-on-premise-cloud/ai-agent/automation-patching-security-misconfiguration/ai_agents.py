@@ -287,7 +287,7 @@ class AIAgents:
                 yaml_content = re.sub(r'^```yaml|^```|\n```$', '', yaml_content).strip()
                 logger.info(f"Extracted YAML Content: {yaml_content}")
                 gitlab_url = gitlab_url
-                access_token = "glpat-DQH4gdXBCzOd9S4mMxFN7286MQp1OmRtZjNuCw.01.121w51sy1"
+                access_token = ""
                 self.push_to_gitlab_directly(
                     file_content=yaml_content,
                     gitlab_url=gitlab_url,
