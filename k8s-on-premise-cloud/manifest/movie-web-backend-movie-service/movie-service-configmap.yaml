@@ -5,8 +5,8 @@ metadata:
   namespace: movie-web
 data:
   .env: |
-    MONGO_URL="mongodb+srv://anh:27092004@backenddb.2qdkr.mongodb.net/netflix?retryWrites=true&w=majority&appName=BackendDB"
-    SECRET_KEY="happynewyear"
+    MONGO_URL=""
+    SECRET_KEY=""
     USER_SERVER_HOST="movie-web-backend-user-service"
     USER_SERVER_PORT="3001"
     ELASTIC_SEARCH_HOST="elasticsearch-master.logging.svc.cluster.local"
