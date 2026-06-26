@@ -255,6 +255,7 @@ mới được triển khai ở manifest gitlab để tiến hành update cho c�
 - Kubernetes Dashboard Url: https://kubernetes-dashboard.nhatanhmovie.website
 - Teleport Url: https://teleport.nhatanhmovie.website
 - Application Url: https://movie.nhatanhweb.website
+- Final Demo: https://drive.google.com/drive/folders/1u0Dt7nhlwluU4BEcXaiEZLaqwkRjuOk6?hl=vi
 
 
 
