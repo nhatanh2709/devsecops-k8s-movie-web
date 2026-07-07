@@ -239,7 +239,7 @@ mới được triển khai ở manifest gitlab để tiến hành update cho c�
 - ModSecurity: Kết hợp với Ingress-Nginx và tiến hành dựng các Rate Limiting, Block Traffic From Country, OWASP Top 10 rule để triển khai thành WAF 
 
 ### Link:
-- Github Link: https://github.com/nhatanh2709/devsecops-k8s-movie-web
+- Gitlab Link: https://gitlab.com/movie-web-manifest
 - K8s Cluster Version 1 DevSecOps Pipeline : https://gitlab.com/movie-web3
 - K8s Cluster Version 1 Manifest: https://gitlab.com/manifest6343345
 - K8S Cluster Version 2 DevSecOps Pipeline: https://gitlab.com/movie-web-v2
